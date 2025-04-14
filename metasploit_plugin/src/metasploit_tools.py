@@ -157,9 +157,14 @@ class MetasploitTools:
             safe_query = query.replace("'", "").replace('"', "").replace(";", "")
             
             # Use msfconsole to search for modules
-            msf_commands = f"search {safe_query}; exit"
-            output = self._run_msfconsole_command(msf_commands)
+            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x 'search {safe_query}; exit'"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             
+            if result.returncode != 0:
+                return f"Error searching modules: {result.stderr}"
+            
+            # Format the output
+            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -197,8 +202,14 @@ class MetasploitTools:
                 return f"Error: Invalid scan type. Valid types are: {', '.join(scan_commands.keys())}"
             
             # Use msfconsole to run the scan
-            output = self._run_msfconsole_command(scan_commands[scan_type], timeout=120)
+            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{scan_commands[scan_type]}'"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             
+            if result.returncode != 0:
+                return f"Error scanning target: {result.stderr}"
+            
+            # Format the output
+            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -247,8 +258,14 @@ class MetasploitTools:
             msf_commands = "; ".join(cmd_parts)
             
             # Use msfconsole to run the exploit
-            output = self._run_msfconsole_command(msf_commands, timeout=120)
+            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{msf_commands}'"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             
+            if result.returncode != 0:
+                return f"Error running exploit: {result.stderr}"
+            
+            # Format the output
+            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -321,8 +338,14 @@ class MetasploitTools:
         """
         try:
             # Use msfconsole to list sessions
-            msf_commands = "sessions -l; exit"
-            output = self._run_msfconsole_command(msf_commands)
+            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x 'sessions -l; exit'"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                return f"Error listing sessions: {result.stderr}"
+            
+            # Format the output
+            output = result.stdout.strip()
             
             if "No active sessions" in output or not "Id  Name" in output:
                 return "No active Metasploit sessions."
