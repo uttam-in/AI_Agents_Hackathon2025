@@ -143,7 +143,7 @@ async def on_chat_start():
 
     # Add your AI service (e.g., OpenAI)
     # Make sure OPENAI_API_KEY and OPENAI_ORG_ID are set in your environment
-    ai_service = OpenAIChatCompletion(ai_model_id="gpt-4o")
+    ai_service = OpenAIChatCompletion()
     kernel.add_service(ai_service)
 
     # Import the plugins
