@@ -75,7 +75,7 @@ class MetasploitTools:
     
     def _run_msfconsole_command(self, msf_commands: str, timeout: int = 30) -> str:
         """
-        Executes msfconsole commands on the remote host.
+        Executes msfconsole commands directly on the local system.
         
         Args:
             msf_commands: Commands to execute in msfconsole
@@ -86,21 +86,18 @@ class MetasploitTools:
         """
         try:
             # First try to execute using the msf_path directly
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{msf_commands}'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            if os.path.exists(os.path.join(self.msf_path, "msfconsole")):
+                cmd = f"cd {self.msf_path} && ./msfconsole -q -x '{msf_commands}'"
+            else:
+                # Fall back to system msfconsole
+                cmd = f"msfconsole -q -x '{msf_commands}'"
+            
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
             
             if result.returncode == 0:
                 return result.stdout.strip()
-            
-            # If that failed, try using the system msfconsole directly 
-            cmd = ["ssh", self.host, f"msfconsole -q -x '{msf_commands}'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-            
-            if result.returncode == 0:
-                return result.stdout.strip()
-            
-            # If we still failed, return the error
-            return f"Error executing Metasploit command: {result.stderr}"
+            else:
+                return f"Error executing Metasploit command: {result.stderr}"
             
         except Exception as e:
             return f"Error executing Metasploit command: {str(e)}"
@@ -157,14 +154,9 @@ class MetasploitTools:
             safe_query = query.replace("'", "").replace('"', "").replace(";", "")
             
             # Use msfconsole to search for modules
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x 'search {safe_query}; exit'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            msf_commands = f"search {safe_query}; exit"
+            output = self._run_msfconsole_command(msf_commands)
             
-            if result.returncode != 0:
-                return f"Error searching modules: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -202,14 +194,8 @@ class MetasploitTools:
                 return f"Error: Invalid scan type. Valid types are: {', '.join(scan_commands.keys())}"
             
             # Use msfconsole to run the scan
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{scan_commands[scan_type]}'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            output = self._run_msfconsole_command(scan_commands[scan_type], timeout=120)
             
-            if result.returncode != 0:
-                return f"Error scanning target: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -258,14 +244,8 @@ class MetasploitTools:
             msf_commands = "; ".join(cmd_parts)
             
             # Use msfconsole to run the exploit
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{msf_commands}'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            output = self._run_msfconsole_command(msf_commands, timeout=120)
             
-            if result.returncode != 0:
-                return f"Error running exploit: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -314,9 +294,8 @@ class MetasploitTools:
             # Join all parts with spaces
             msf_command = " ".join(cmd_parts)
             
-            # Use SSH to run msfvenom
-            cmd = ["ssh", self.host, msf_command]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            # Run msfvenom command directly
+            result = subprocess.run(msf_command, shell=True, capture_output=True, text=True, timeout=30)
             
             if result.returncode != 0:
                 return f"Error generating payload: {result.stderr}"
@@ -338,14 +317,8 @@ class MetasploitTools:
         """
         try:
             # Use msfconsole to list sessions
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x 'sessions -l; exit'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            
-            if result.returncode != 0:
-                return f"Error listing sessions: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
+            msf_commands = "sessions -l; exit"
+            output = self._run_msfconsole_command(msf_commands)
             
             if "No active sessions" in output or not "Id  Name" in output:
                 return "No active Metasploit sessions."

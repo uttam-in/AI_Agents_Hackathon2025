@@ -149,7 +149,9 @@ async def on_chat_start():
     # Import the plugins
     kernel.add_plugin(SecurityToolsPlugin(), plugin_name="SecurityTools")
     kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
-    kernel.add_plugin(MetasploitToolsPlugin(), plugin_name="MetasploitTools")
+    
+    # Configure Metasploit - now using local msfconsole installation
+    kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
