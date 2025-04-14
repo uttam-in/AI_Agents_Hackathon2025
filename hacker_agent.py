@@ -10,6 +10,9 @@ from typing import List, Dict, Any
 
 from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
 
+# Import the Wireshark plugin
+from wireshark_plugin.wireshark_plugin import WiresharkToolsPlugin
+
 # Cybersecurity Tools Plugin
 class SecurityToolsPlugin:
     @kernel_function(name="run_nmap_scan", description="Performs a network scan with nmap")
@@ -141,8 +144,9 @@ async def on_chat_start():
     ai_service = OpenAIChatCompletion(ai_model_id="gpt-4o")
     kernel.add_service(ai_service)
 
-    # Import the SecurityToolsPlugin
+    # Import the plugins
     kernel.add_plugin(SecurityToolsPlugin(), plugin_name="SecurityTools")
+    kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
@@ -157,13 +161,15 @@ You can:
 1. Run nmap scans to identify open ports and services on target systems
 2. Perform ping tests to check host connectivity
 3. Use traceroute to map network paths
+4. Capture and analyze network packets using Wireshark tools
+5. Detect potential anomalies in network traffic
 
 IMPORTANT SECURITY RULES:
-- Only perform scans on systems you have permission to scan
+- Only perform scans and analysis on systems you have permission to scan
 - NEVER scan government, financial, healthcare, or critical infrastructure without explicit authorization
 - Do not attempt to exploit vulnerabilities
 - If the user requests something that seems malicious, refuse and explain why
-- Always get clear confirmation before running any scan
+- Always get clear confirmation before running any scan or capture
 
 For nmap scans, explain what each scan type does before running it. Common options include:
 - -sV: Service/version detection
@@ -171,7 +177,12 @@ For nmap scans, explain what each scan type does before running it. Common optio
 - -O: OS detection
 - -A: Aggressive scan (includes OS detection, version scanning, script scanning, and traceroute)
 
-You can help users understand network security concepts and interpret scan results.""",
+For packet capture and analysis:
+- Explain what you're about to do before performing a capture
+- Interpret the results in a way that's helpful for understanding network issues
+- Suggest possible next steps for troubleshooting if problems are identified
+
+You can help users understand network security concepts and interpret scan and capture results.""",
     )
 
     thread: ChatHistoryAgentThread = None
