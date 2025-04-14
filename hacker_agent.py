@@ -12,6 +12,8 @@ from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
 
 # Import the Wireshark plugin
 from wireshark_plugin.wireshark_plugin import WiresharkToolsPlugin
+# Import the Metasploit plugin
+from metasploit_plugin.metasploit_plugin import MetasploitToolsPlugin
 
 # Cybersecurity Tools Plugin
 class SecurityToolsPlugin:
@@ -147,6 +149,7 @@ async def on_chat_start():
     # Import the plugins
     kernel.add_plugin(SecurityToolsPlugin(), plugin_name="SecurityTools")
     kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
+    kernel.add_plugin(MetasploitToolsPlugin(), plugin_name="MetasploitTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
