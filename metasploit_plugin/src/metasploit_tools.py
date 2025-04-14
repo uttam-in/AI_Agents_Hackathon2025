@@ -18,8 +18,92 @@ class MetasploitTools:
             msf_path: Path to Metasploit Framework installation
         """
         self.host = host
-        self.msf_path = msf_path
+        
+        # Check if the provided msf_path is valid, otherwise try to detect it
+        self.msf_path = self._validate_msf_path(msf_path)
         self.last_command_output = ""
+        
+    def _validate_msf_path(self, msf_path: str) -> str:
+        """
+        Validates and corrects the Metasploit Framework path if needed.
+        
+        Args:
+            msf_path: The provided path to Metasploit Framework
+            
+        Returns:
+            Valid path to Metasploit Framework
+        """
+        # First, try to use the provided path
+        if msf_path:
+            # Check if the path needs a directory adjustment
+            if msf_path == "/usr/bin" or msf_path == "/usr/bin/msfconsole":
+                # If msfconsole is at /usr/bin/msfconsole, Metasploit is likely at the default location
+                return "/usr/share/metasploit-framework"
+            return msf_path
+            
+        # Try to detect the Metasploit path
+        try:
+            # Try to get the location of msfconsole
+            cmd = ["ssh", self.host, "which msfconsole"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                msfconsole_path = result.stdout.strip()
+                
+                # If msfconsole is at /usr/bin/msfconsole, Metasploit is likely at the default location
+                if msfconsole_path == "/usr/bin/msfconsole":
+                    return "/usr/share/metasploit-framework"
+                
+                # Otherwise, try to infer the Metasploit path from msfconsole location
+                # Remove the binary name to get the bin directory
+                bin_dir = os.path.dirname(msfconsole_path)
+                
+                # Go up one directory level and add 'share/metasploit-framework'
+                if bin_dir.endswith('/bin'):
+                    possible_path = os.path.join(os.path.dirname(bin_dir), 'share/metasploit-framework')
+                    # Check if this path exists
+                    check_cmd = ["ssh", self.host, f"test -d {possible_path} && echo exists"]
+                    check_result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=10)
+                    if check_result.returncode == 0 and "exists" in check_result.stdout:
+                        return possible_path
+        except:
+            # If any error occurs during detection, fall back to the default path
+            pass
+            
+        # Fall back to default path if detection fails
+        return "/usr/share/metasploit-framework"
+    
+    def _run_msfconsole_command(self, msf_commands: str, timeout: int = 30) -> str:
+        """
+        Executes msfconsole commands on the remote host.
+        
+        Args:
+            msf_commands: Commands to execute in msfconsole
+            timeout: Command execution timeout in seconds
+            
+        Returns:
+            Command output
+        """
+        try:
+            # First try to execute using the msf_path directly
+            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{msf_commands}'"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            
+            if result.returncode == 0:
+                return result.stdout.strip()
+            
+            # If that failed, try using the system msfconsole directly 
+            cmd = ["ssh", self.host, f"msfconsole -q -x '{msf_commands}'"]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            
+            if result.returncode == 0:
+                return result.stdout.strip()
+            
+            # If we still failed, return the error
+            return f"Error executing Metasploit command: {result.stderr}"
+            
+        except Exception as e:
+            return f"Error executing Metasploit command: {str(e)}"
     
     def list_modules(self, module_type: str = "exploit") -> str:
         """
@@ -36,15 +120,9 @@ class MetasploitTools:
             return f"Error: Invalid module type. Valid types are: {', '.join(valid_types)}"
         
         try:
-            # Use msfconsole to list modules
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x 'show {module_type}; exit'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            msf_commands = f"show {module_type}; exit"
+            output = self._run_msfconsole_command(msf_commands)
             
-            if result.returncode != 0:
-                return f"Error listing modules: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -79,14 +157,9 @@ class MetasploitTools:
             safe_query = query.replace("'", "").replace('"', "").replace(";", "")
             
             # Use msfconsole to search for modules
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x 'search {safe_query}; exit'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            msf_commands = f"search {safe_query}; exit"
+            output = self._run_msfconsole_command(msf_commands)
             
-            if result.returncode != 0:
-                return f"Error searching modules: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -124,14 +197,8 @@ class MetasploitTools:
                 return f"Error: Invalid scan type. Valid types are: {', '.join(scan_commands.keys())}"
             
             # Use msfconsole to run the scan
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{scan_commands[scan_type]}'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            output = self._run_msfconsole_command(scan_commands[scan_type], timeout=120)
             
-            if result.returncode != 0:
-                return f"Error scanning target: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -180,14 +247,8 @@ class MetasploitTools:
             msf_commands = "; ".join(cmd_parts)
             
             # Use msfconsole to run the exploit
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x '{msf_commands}'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            output = self._run_msfconsole_command(msf_commands, timeout=120)
             
-            if result.returncode != 0:
-                return f"Error running exploit: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
             # Store the raw output for later use
             self.last_command_output = output
             
@@ -260,14 +321,8 @@ class MetasploitTools:
         """
         try:
             # Use msfconsole to list sessions
-            cmd = ["ssh", self.host, f"cd {self.msf_path} && ./msfconsole -q -x 'sessions -l; exit'"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            
-            if result.returncode != 0:
-                return f"Error listing sessions: {result.stderr}"
-            
-            # Format the output
-            output = result.stdout.strip()
+            msf_commands = "sessions -l; exit"
+            output = self._run_msfconsole_command(msf_commands)
             
             if "No active sessions" in output or not "Id  Name" in output:
                 return "No active Metasploit sessions."
