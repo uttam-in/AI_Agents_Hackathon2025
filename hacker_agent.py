@@ -16,7 +16,7 @@ from wireshark_plugin.wireshark_plugin import WiresharkToolsPlugin
 from metasploit_plugin.metasploit_plugin import MetasploitToolsPlugin
 
 # Cybersecurity Tools Plugin
-class SecurityToolsPlugin:
+class NmapNetworkingToolsPlugin:
     @kernel_function(name="run_nmap_scan", description="Performs a network scan with nmap")
     def run_nmap_scan(self, target: str, scan_type: str = "-sV") -> str:
         """
@@ -147,7 +147,7 @@ async def on_chat_start():
     kernel.add_service(ai_service)
 
     # Import the plugins
-    kernel.add_plugin(SecurityToolsPlugin(), plugin_name="SecurityTools")
+    kernel.add_plugin(NmapNetworkingToolsPlugin(), plugin_name="NetworkTools")
     kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
     
     # Configure Metasploit - now using local msfconsole installation
