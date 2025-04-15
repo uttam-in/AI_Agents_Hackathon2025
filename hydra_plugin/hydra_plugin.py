@@ -1,7 +1,7 @@
 # HYDRA Plugin Main File
 # Provides an interface to run HYDRA application scans
 
-from src.hydra_tools import run_hydra_scan
+from hydra_plugin.src.hydra_tools import run_hydra_scan
 
 class HydraPlugin:
     def __init__(self):

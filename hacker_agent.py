@@ -14,6 +14,8 @@ from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
 from wireshark_plugin.wireshark_plugin import WiresharkToolsPlugin
 # Import the Metasploit plugin
 from metasploit_plugin.metasploit_plugin import MetasploitToolsPlugin
+# Import the Hydra plugin
+from hydra_plugin.hydra_plugin import HydraPlugin
 
 # Cybersecurity Tools Plugin
 class NmapNetworkingToolsPlugin:
@@ -149,6 +151,9 @@ async def on_chat_start():
     # Import the plugins
     kernel.add_plugin(NmapNetworkingToolsPlugin(), plugin_name="NetworkTools")
     kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
+    
+    # Add Hydra plugin
+    kernel.add_plugin(HydraPlugin(), plugin_name="HydraTools")
     
     # Configure Metasploit - now using local msfconsole installation
     kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
