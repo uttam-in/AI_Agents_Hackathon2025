@@ -18,6 +18,8 @@ from metasploit_plugin.metasploit_plugin import MetasploitToolsPlugin
 from hydra_plugin.hydra_plugin import HydraPlugin
 # Import the Nmap plugin from the new location
 from nmap_plugin.nmap_plugin import NmapNetworkingToolsPlugin
+# Import the Linux tools plugin
+from linux_plugin.linux_plugin import LinuxToolsPlugin
 
 @cl.on_chat_start
 async def on_chat_start():
@@ -38,6 +40,9 @@ async def on_chat_start():
     
     # Configure Metasploit - now using local msfconsole installation
     kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
+    
+    # Add Linux Tools plugin
+    kernel.add_plugin(LinuxToolsPlugin(), plugin_name="LinuxTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
