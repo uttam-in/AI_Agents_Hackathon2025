@@ -27,15 +27,6 @@ from burp_suite_plugin.burp_suite_plugin import BurpSuiteToolsPlugin
 # Import the Netdiscover plugin
 from netdiscover_plugin.netdiscover_plugin import NetdiscoverToolsPlugin
 
-# Chainlit UI Configuration
-cl.configure(
-    # Enable code highlighting and copy button
-    code={
-        "enabled": True,
-        "lang": "python",
-        "wrap": False,
-    }
-)
 
 @cl.on_chat_start
 async def on_chat_start():
