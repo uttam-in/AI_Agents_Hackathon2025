@@ -24,6 +24,8 @@ from linux_plugin.linux_plugin import LinuxToolsPlugin
 from sqlmap_plugin.sqlmap_plugin import SQLMapToolsPlugin
 # Import the Burp Suite plugin
 from burp_suite_plugin.burp_suite_plugin import BurpSuiteToolsPlugin
+# Import the Netdiscover plugin
+from netdiscover_plugin.netdiscover_plugin import NetdiscoverToolsPlugin
 
 @cl.on_chat_start
 async def on_chat_start():
@@ -53,6 +55,9 @@ async def on_chat_start():
     
     # Add Burp Suite tools plugin
     kernel.add_plugin(BurpSuiteToolsPlugin(), plugin_name="BurpSuiteTools")
+    
+    # Add Netdiscover tools plugin
+    kernel.add_plugin(NetdiscoverToolsPlugin(), plugin_name="NetdiscoverTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
