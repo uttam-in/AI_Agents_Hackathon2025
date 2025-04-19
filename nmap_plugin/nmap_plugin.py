@@ -7,9 +7,9 @@ class NmapNetworkingToolsPlugin:
     def run_nmap_scan(self, target: str, scan_type: str = "-sV") -> str:
         if not self._is_valid_target(target):
             return "Error: Invalid target specification. Please provide a valid IP, hostname, or network range."
-        allowed_options = ["-sV", "-sS", "-O", "-A", "-T4", "--top-ports", "-F"]
+        allowed_options = ["-sV", "-sS", "-sU", "-O", "-A", "-T4", "--top-ports", "-F"]
         if not any(opt in scan_type for opt in allowed_options):
-            return "Error: Unsupported scan type. Please use one of: -sV, -sS, -O, -A, -T4, --top-ports, -F"
+            return "Error: Unsupported scan type. Please use one of: -sV, -sS, -O, -A, -T4, --top-ports, -F, -sU"
         try:
             cmd = ["nmap", scan_type, target]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
