@@ -12,6 +12,7 @@ class NmapNetworkingToolsPlugin:
             return "Error: Unsupported scan type. Please use one of: -sV, -sS, -O, -A, -T4, --top-ports, -F, -sU"
         try:
             cmd = ["nmap", scan_type, target]
+            print(f"Running live nmap scan with command: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
             if result.returncode != 0:
                 return f"Error running nmap: {result.stderr}"
