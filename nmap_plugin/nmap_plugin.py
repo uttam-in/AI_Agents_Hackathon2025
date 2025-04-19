@@ -26,7 +26,7 @@ class NmapNetworkingToolsPlugin:
         import time
         if not self._is_valid_target(target):
             return "Error: Invalid target specification. Please provide a valid IP, hostname, or network range."
-        allowed_options = ["-sV", "-sS", "-O", "-A", "-T4", "--top-ports", "-F"]
+        allowed_options = ["-sV", "-sS", "-O", "-A", "-T4", "--top-ports", "-F", "-sU"]
         if not any(opt in scan_type for opt in allowed_options):
             return "Error: Unsupported scan type. Please use one of: -sV, -sS, -O, -A, -T4, --top-ports, -F"
         try:
