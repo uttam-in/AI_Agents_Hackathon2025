@@ -28,6 +28,8 @@ from burp_suite_plugin.burp_suite_plugin import BurpSuiteToolsPlugin
 from netdiscover_plugin.netdiscover_plugin import NetdiscoverToolsPlugin
 # Import the NBTScan plugin
 from nbtscan_plugin.nbtscan_plugin import NBTScanToolsPlugin
+# Import the SearchSploit plugin
+from searchsploit_plugin.searchsploit_plugin import SearchSploitPlugin
 
 
 @cl.on_chat_start
@@ -64,6 +66,9 @@ async def on_chat_start():
     
     # Add NBTScan tools plugin
     kernel.add_plugin(NBTScanToolsPlugin(), plugin_name="NBTScanTools")
+    
+    # Add SearchSploit tools plugin
+    kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
