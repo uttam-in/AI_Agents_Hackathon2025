@@ -32,6 +32,8 @@ from nbtscan_plugin.nbtscan_plugin import NBTScanToolsPlugin
 from searchsploit_plugin.searchsploit_plugin import SearchSploitPlugin
 # Import the Python plugin
 from python_plugin.python_plugin import PythonScriptPlugin
+# Import the Terminal plugin
+from terminal_plugin.terminal_plugin import TerminalPlugin
 
 
 @cl.on_chat_start
@@ -74,6 +76,9 @@ async def on_chat_start():
     
     # Add Python script plugin
     kernel.add_plugin(PythonScriptPlugin(), plugin_name="PythonScriptTools")
+    
+    # Add Terminal plugin
+    kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
