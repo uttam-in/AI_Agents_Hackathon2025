@@ -170,13 +170,19 @@ class TerminalTools:
         try:
             # Different commands for different operating systems
             # For macOS
-            if os.name == 'posix' and 'darwin' in os.sys.platform:
+            if os.name == 'posix' and ('darwin' in os.sys.platform or 'Darwin' in os.sys.platform):
                 process = subprocess.Popen(
-                    ['open', '-a', 'Terminal'],
+                    ['open', '-a', 'Terminal', '.'],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True
                 )
+                stdout, stderr = process.communicate(timeout=5)
+                return {
+                    "success": process.returncode == 0,
+                    "stdout": stdout.strip(),
+                    "stderr": stderr.strip()
+                }
             # For Linux
             elif os.name == 'posix':
                 # Try various terminal emulators available on Linux
@@ -190,26 +196,38 @@ class TerminalTools:
                             stderr=subprocess.PIPE,
                             text=True
                         )
-                        if process.returncode is None or process.returncode == 0:
-                            break
-                    except FileNotFoundError:
+                        stdout, stderr = process.communicate(timeout=5)
+                        if process.returncode == 0:
+                            return {
+                                "success": True,
+                                "stdout": stdout.strip(),
+                                "stderr": stderr.strip()
+                            }
+                    except (FileNotFoundError, subprocess.SubprocessError):
                         continue
-                else:
-                    # If no terminal emulator is found
-                    return {
-                        "success": False,
-                        "stdout": "",
-                        "stderr": "Could not find a suitable terminal emulator on this system."
-                    }
+                
+                # If no terminal emulator is found
+                return {
+                    "success": False,
+                    "stdout": "",
+                    "stderr": "Could not find a suitable terminal emulator on this system."
+                }
             # For Windows
             elif os.name == 'nt':
                 process = subprocess.Popen(
-                    ['start', 'cmd'],
+                    'start cmd',
                     shell=True,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True
                 )
+                # Windows Popen with shell=True behaves differently
+                # No need to communicate here as it creates a detached process
+                return {
+                    "success": True,
+                    "stdout": "",
+                    "stderr": ""
+                }
             else:
                 return {
                     "success": False,
@@ -217,12 +235,12 @@ class TerminalTools:
                     "stderr": f"Unsupported operating system: {os.name}"
                 }
             
-            stdout, stderr = process.communicate(timeout=5)
-            
+        except subprocess.TimeoutExpired as e:
+            # Even if timeout occurs, terminal might still have opened successfully
             return {
-                "success": process.returncode == 0,
-                "stdout": stdout.strip(),
-                "stderr": stderr.strip()
+                "success": True,
+                "stdout": "",
+                "stderr": f"Terminal process started but communication timed out: {str(e)}"
             }
         except Exception as e:
             return {
