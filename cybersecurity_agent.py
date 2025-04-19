@@ -30,6 +30,8 @@ from netdiscover_plugin.netdiscover_plugin import NetdiscoverToolsPlugin
 from nbtscan_plugin.nbtscan_plugin import NBTScanToolsPlugin
 # Import the SearchSploit plugin
 from searchsploit_plugin.searchsploit_plugin import SearchSploitPlugin
+# Import the Python plugin
+from python_plugin.python_plugin import PythonScriptPlugin
 
 
 @cl.on_chat_start
@@ -69,6 +71,9 @@ async def on_chat_start():
     
     # Add SearchSploit tools plugin
     kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
+    
+    # Add Python script plugin
+    kernel.add_plugin(PythonScriptPlugin(), plugin_name="PythonScriptTools")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
