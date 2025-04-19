@@ -72,6 +72,28 @@ class NmapNetworkingToolsPlugin:
         except Exception as e:
             return f"Error running traceroute: {str(e)}"
 
+    @kernel_function(name="scan_port_vulnerabilities", description="Scans specific ports for vulnerabilities using the vulners script")
+    def scan_port_vulnerabilities(self, target: str, ports: str) -> str:
+        if not self._is_valid_target(target):
+            return "Error: Invalid target specification. Please provide a valid IP, hostname, or network range."
+        
+        if not ports or not all(c.isdigit() or c in ',-' for c in ports):
+            return "Error: Invalid port specification. Please provide ports as numbers, ranges (e.g., 80-100), or comma-separated values."
+        
+        try:
+            cmd = ["nmap", "-sV", "--script", "vulners", "-p", ports, target]
+            print(f"Running vulnerability scan on ports {ports} with command: {' '.join(cmd)}")
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            
+            if result.returncode != 0:
+                return f"Error running vulnerability scan: {result.stderr}"
+                
+            return self._format_nmap_output(result.stdout)
+        except subprocess.TimeoutExpired:
+            return "Error: Vulnerability scan took too long and was terminated."
+        except Exception as e:
+            return f"Error running vulnerability scan: {str(e)}"
+
     def _is_valid_target(self, target: str) -> bool:
         if not target or len(target) > 100:
             return False
