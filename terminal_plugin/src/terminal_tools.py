@@ -159,3 +159,74 @@ class TerminalTools:
                 "stderr": f"Error listing directory: {str(e)}",
                 "items": []
             }
+    
+    def open_terminal_window(self) -> Dict[str, Any]:
+        """
+        Opens a terminal window directly on the screen
+        
+        Returns:
+            Dictionary with the result of the operation
+        """
+        try:
+            # Different commands for different operating systems
+            # For macOS
+            if os.name == 'posix' and 'darwin' in os.sys.platform:
+                process = subprocess.Popen(
+                    ['open', '-a', 'Terminal'],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+            # For Linux
+            elif os.name == 'posix':
+                # Try various terminal emulators available on Linux
+                terminals = ['gnome-terminal', 'xterm', 'konsole', 'terminator', 'xfce4-terminal']
+                
+                for terminal in terminals:
+                    try:
+                        process = subprocess.Popen(
+                            [terminal],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True
+                        )
+                        if process.returncode is None or process.returncode == 0:
+                            break
+                    except FileNotFoundError:
+                        continue
+                else:
+                    # If no terminal emulator is found
+                    return {
+                        "success": False,
+                        "stdout": "",
+                        "stderr": "Could not find a suitable terminal emulator on this system."
+                    }
+            # For Windows
+            elif os.name == 'nt':
+                process = subprocess.Popen(
+                    ['start', 'cmd'],
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+            else:
+                return {
+                    "success": False,
+                    "stdout": "",
+                    "stderr": f"Unsupported operating system: {os.name}"
+                }
+            
+            stdout, stderr = process.communicate(timeout=5)
+            
+            return {
+                "success": process.returncode == 0,
+                "stdout": stdout.strip(),
+                "stderr": stderr.strip()
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "stdout": "",
+                "stderr": f"Error opening terminal window: {str(e)}"
+            }

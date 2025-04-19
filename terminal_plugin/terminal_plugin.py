@@ -81,6 +81,21 @@ class TerminalPlugin:
         else:
             return f"Error: {result['stderr']}"
 
+    @kernel_function(name="open_terminal_window", description="Opens a terminal window on the screen")
+    def open_terminal_window(self) -> str:
+        """
+        Opens a terminal window directly on the screen.
+        
+        Returns:
+            A string with the result of the operation
+        """
+        result = self.terminal_tools.open_terminal_window()
+        
+        if result["success"]:
+            return "Terminal window opened successfully."
+        else:
+            return f"Error opening terminal window: {result['stderr']}"
+
     def _is_potentially_harmful(self, command: str) -> bool:
         """
         Check if a command is potentially harmful or dangerous.
