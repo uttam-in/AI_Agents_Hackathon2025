@@ -117,3 +117,30 @@ class MetasploitToolsPlugin:
             List of active sessions
         """
         return self.tools.list_sessions()
+    
+    @kernel_function(name="handle_interactive_shell", description="Handles an interactive shell session from an exploit like vsftpd_234_backdoor")
+    def handle_interactive_shell(self, session_id: str = "1", commands: str = "") -> str:
+        """
+        Handles an interactive shell session.
+        
+        Args:
+            session_id: The session ID to interact with (default: 1)
+            commands: Comma-separated list of commands to run in the session
+            
+        Returns:
+            Result of the interaction
+        """
+        try:
+            # Convert session_id to integer
+            session_id_int = int(session_id)
+            
+            # Parse commands into a list if provided
+            command_list = None
+            if commands:
+                command_list = [cmd.strip() for cmd in commands.split(',')]
+            
+            return self.tools.handle_interactive_shell(session_id_int, command_list)
+        except ValueError:
+            return "Error: Session ID must be a valid integer."
+        except Exception as e:
+            return f"Error handling interactive shell: {str(e)}"

