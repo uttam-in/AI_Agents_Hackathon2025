@@ -52,6 +52,171 @@ standalone_app.add_middleware(
 global_agent = None
 global_thread = None
 terminal_tools = TerminalTools()  # Initialize terminal tools for direct commands
+current_sid = None  # Track current Socket.IO session ID for tool notifications
+active_tools = {}  # Track active tools
+
+
+# Function to create a plugin wrapper that tracks tool usage
+def create_tracking_wrapper(plugin, plugin_name, sid):
+    """Create a wrapper around plugin functions to track when they're called"""
+    global current_sid
+    current_sid = sid
+    
+    # Store all the methods that have the @kernel_function decorator
+    for attr_name in dir(plugin):
+        if attr_name.startswith('__'):
+            continue
+            
+        attr = getattr(plugin, attr_name)
+        if callable(attr) and hasattr(attr, 'kernel_function'):
+            original_method = attr
+            
+            # Create a wrapper function
+            def make_wrapper(method_name, orig_method):
+                def wrapper(*args, **kwargs):
+                    # Get the friendly tool name
+                    tool_name = get_friendly_tool_name(plugin_name, method_name)
+                    
+                    # Log and send notification that tool is starting
+                    if tool_name:
+                        print(f"Tool started: {tool_name}")
+                        # Use a non-blocking approach to emit via Socket.IO
+                        try:
+                            loop = asyncio.get_event_loop()
+                            if loop.is_running():
+                                loop.create_task(sio.emit('tool_usage', {
+                                    'tool': tool_name,
+                                    'status': 'started',
+                                    'timestamp': time.time()
+                                }, room=current_sid))
+                        except Exception as e:
+                            print(f"Error emitting tool start: {e}")
+                    
+                    try:
+                        # Call the original method
+                        result = orig_method(*args, **kwargs)
+                        return result
+                    finally:
+                        # Log and send notification that tool is done
+                        if tool_name:
+                            print(f"Tool completed: {tool_name}")
+                            # Use a non-blocking approach to emit via Socket.IO
+                            try:
+                                loop = asyncio.get_event_loop()
+                                if loop.is_running():
+                                    loop.create_task(sio.emit('tool_usage', {
+                                        'tool': tool_name,
+                                        'status': 'completed',
+                                        'timestamp': time.time()
+                                    }, room=current_sid))
+                            except Exception as e:
+                                print(f"Error emitting tool completion: {e}")
+                
+                return wrapper
+            
+            # Replace the original method with our wrapper
+            setattr(plugin, attr_name, make_wrapper(attr_name, original_method))
+    
+    return plugin
+
+
+# Function to register tool tracking for all plugins in a kernel
+def register_tool_tracking(kernel, sid):
+    """Register tool tracking for all plugins in a kernel"""
+    global current_sid
+    current_sid = sid
+    
+    # Get all registered plugins
+    plugins = kernel.plugins
+    
+    # Wrap each plugin with our tracking wrapper
+    for plugin_name, plugin in plugins.items():
+        if plugin_name != "sk":  # Skip the built-in 'sk' plugin
+            wrapped_plugin = create_tracking_wrapper(plugin, plugin_name, sid)
+            # Replace the original plugin with our wrapped version
+            kernel.plugins[plugin_name] = wrapped_plugin
+
+
+# Helper function to get user-friendly tool names
+def get_friendly_tool_name(plugin_name, function_name):
+    """Convert plugin and function names to user-friendly tool names"""
+    tool_mapping = {
+        "NetworkTools": {
+            "scan": "Nmap Scanner",
+            "ping": "Ping Test",
+            "traceroute": "Traceroute",
+            "service_scan": "Nmap Service Scanner"
+        },
+        "WiresharkTools": {
+            "capture_packets": "Wireshark Packet Capture",
+            "analyze_traffic": "Wireshark Traffic Analysis",
+            "detect_anomalies": "Wireshark Anomaly Detection",
+            "list_interfaces": "Network Interface Lister"
+        },
+        "HydraTools": {
+            "brute_force": "Hydra Brute Force",
+            "supported_services": "Hydra Service Lister"
+        },
+        "MetasploitTools": {
+            "list_modules": "Metasploit Module Lister",
+            "search_modules": "Metasploit Module Search",
+            "scan_target": "Metasploit Scanner",
+            "exploit_target": "Metasploit Exploit",
+            "generate_payload": "Metasploit Payload Generator",
+            "list_sessions": "Metasploit Session Manager",
+            "handle_interactive_shell": "Metasploit Shell"
+        },
+        "LinuxTools": {
+            "execute_command": "Linux Command"
+        },
+        "SQLMapTools": {
+            "scan_url": "SQLMap URL Scanner",
+            "scan_form": "SQLMap Form Scanner",
+            "list_databases": "SQLMap Database Lister",
+            "dump_tables": "SQLMap Table Dumper"
+        },
+        "BurpSuiteTools": {
+            "scan_target": "Burp Suite Scanner",
+            "analyze_request": "Burp Suite Request Analyzer",
+            "send_to_intruder": "Burp Suite Intruder",
+            "test_for_vulns": "Burp Suite Vulnerability Test",
+            "export_site_map": "Burp Suite Site Map Exporter"
+        },
+        "NetdiscoverTools": {
+            "scan_network": "Netdiscover Network Scanner",
+            "passive_scan": "Netdiscover Passive Scanner"
+        },
+        "NBTScanTools": {
+            "scan_network": "NBTScan Network Scanner",
+            "scan_host": "NBTScan Host Scanner",
+            "get_detailed_info": "NBTScan Detailed Info"
+        },
+        "SearchSploitTools": {
+            "search_exploits": "SearchSploit Exploit Finder",
+            "get_exploit_details": "SearchSploit Exploit Details",
+            "update_database": "SearchSploit Database Updater",
+            "list_platforms": "SearchSploit Platform Lister",
+            "download_exploit": "SearchSploit Exploit Downloader"
+        },
+        "PythonScriptTools": {
+            "run_script": "Python Script Runner",
+            "generate_script": "Python Script Generator"
+        },
+        "TerminalTools": {
+            "execute_command": "Terminal Command"
+        }
+    }
+    
+    # Return the friendly name if available, otherwise use default formatting
+    if plugin_name in tool_mapping and function_name in tool_mapping[plugin_name]:
+        return tool_mapping[plugin_name][function_name]
+    elif plugin_name:
+        # Create a reasonable default name
+        clean_function = function_name.replace("_", " ").title()
+        clean_plugin = plugin_name.replace("Tools", "").replace("Plugin", "")
+        return f"{clean_plugin} {clean_function}"
+    
+    return None  # Return None for system functions we don't want to show
 
 
 @cl.on_chat_start
@@ -97,6 +262,10 @@ async def on_chat_start():
     
     # Add Terminal plugin
     kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
+    
+    # Register the tool tracking handlers for Chainlit's WebSocket session
+    # This uses a special session ID for Chainlit
+    register_tool_tracking(kernel, "chainlit_session")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
@@ -210,12 +379,26 @@ async def chat_message(sid, data):
         kernel.add_plugin(NmapNetworkingToolsPlugin(), plugin_name="NetworkTools")
         kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
         kernel.add_plugin(HydraPlugin(), plugin_name="HydraTools")
+        kernel.add_plugin(SQLMapToolsPlugin(), plugin_name="SQLMapTools")
+        kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
+        kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
+        kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
+        kernel.add_plugin(BurpSuiteToolsPlugin(), plugin_name="BurpSuiteTools")
+        kernel.add_plugin(NetdiscoverToolsPlugin(), plugin_name="NetdiscoverTools")
+        kernel.add_plugin(NBTScanToolsPlugin(), plugin_name="NBTScanTools")
         
         global_agent = ChatCompletionAgent(
             kernel=kernel,
             name="CyberSecAgent",
             instructions="You are a cybersecurity assistant that can help with various cybersecurity tasks.",
         )
+        
+        # Register tool tracking for this kernel
+        register_tool_tracking(kernel, sid)
+    else:
+        # Make sure we're using the current session for tool tracking notifications
+        global current_sid
+        current_sid = sid
     
     response_text = ""
     buffer = ""
