@@ -67,175 +67,181 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
         if attr_name.startswith('__'):
             continue
             
-        attr = getattr(plugin, attr_name)
-        if callable(attr) and hasattr(attr, 'kernel_function'):
-            original_method = attr
-            
-            # Create a wrapper function
-            def make_wrapper(method_name, orig_method):
-                # Define a synchronous version of the emit function that uses the event loop
-                def sync_emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
-                    """Synchronous helper function to emit tool events directly"""
-                    try:
-                        loop = asyncio.get_event_loop()
-                        if event_type == 'tool_usage':
-                            # Legacy format
-                            coroutine = sio.emit('tool_usage', {
-                                'tool': tool_name,
-                                'status': status,
-                                'timestamp': time.time()
-                            }, room=current_sid)
-                            if loop.is_running():
-                                # If loop is running, create a task
-                                future = asyncio.run_coroutine_threadsafe(coroutine, loop)
-                                future.result(timeout=5)  # Wait for result with timeout
-                            else:
-                                # If loop is not running, run the coroutine
-                                loop.run_until_complete(coroutine)
-                        else:  # tool_execution
-                            # Enhanced format
-                            event_data = {
-                                'tool': tool_name,
-                                'status': status,
-                                'timestamp': time.time(),
-                                'tool_id': tool_id,
-                                'isPlugin': True,  # Mark that this is a plugin execution
-                                'pluginName': plugin_name  # Include the original plugin name
-                            }
-                            
-                            if parameters:
-                                event_data['parameters'] = parameters
-                            if error:
-                                event_data['error'] = error
-                            if duration:
-                                event_data['duration'] = duration
-                                
-                            coroutine = sio.emit('tool_execution', event_data, room=current_sid)
-                            if loop.is_running():
-                                # If loop is running, create a task
-                                future = asyncio.run_coroutine_threadsafe(coroutine, loop)
-                                future.result(timeout=5)  # Wait for result with timeout
-                            else:
-                                # If loop is not running, run the coroutine
-                                loop.run_until_complete(coroutine)
-                            
-                            # Print tool usage when emitted
-                            print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status} - Plugin: {plugin_name}")
-                    except Exception as e:
-                        print(f"Error emitting {event_type} event: {e}")
-                        traceback.print_exc()  # Print the full traceback to help with debugging
+        try:
+            attr = getattr(plugin, attr_name)
+            # Check if it's callable and has the kernel_function attribute using hasattr
+            # without directly accessing Pydantic model fields
+            if callable(attr) and hasattr(attr, 'kernel_function'):
+                original_method = attr
                 
-                def wrapper(*args, **kwargs):
-                    # Get the friendly tool name
-                    tool_name = get_friendly_tool_name(plugin_name, method_name)
-                    
-                    # Highly visible output for tool selection
-                    if tool_name:
-                        print(f"\n{'='*50}")
-                        print(f"🔧 TOOL SELECTED BY LLM: '{tool_name}'")
-                        print(f"📝 PLUGIN: {plugin_name} → FUNCTION: {method_name}")
-                        print(f"{'='*50}\n")
-                    
-                    # Capture parameters for logging
-                    parameters_dict = {}
-                    # Get positional args from the original function signature
-                    if hasattr(orig_method, '__code__'):
-                        param_names = orig_method.__code__.co_varnames[:orig_method.__code__.co_argcount]
-                        # Skip 'self' parameter if it's the first one
-                        if param_names and param_names[0] == 'self':
-                            param_names = param_names[1:]
-                        
-                        # Map positional args to their parameter names
-                        for i, arg_name in enumerate(param_names):
-                            if i < len(args):
-                                # Convert complex objects to strings to avoid serialization issues
-                                if isinstance(args[i], (dict, list, tuple, set)):
-                                    parameters_dict[arg_name] = str(args[i])
+                # Create a wrapper function
+                def make_wrapper(method_name, orig_method):
+                    # Define a synchronous version of the emit function that uses the event loop
+                    def sync_emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
+                        """Synchronous helper function to emit tool events directly"""
+                        try:
+                            loop = asyncio.get_event_loop()
+                            if event_type == 'tool_usage':
+                                # Legacy format
+                                coroutine = sio.emit('tool_usage', {
+                                    'tool': tool_name,
+                                    'status': status,
+                                    'timestamp': time.time()
+                                }, room=current_sid)
+                                if loop.is_running():
+                                    # If loop is running, create a task
+                                    future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+                                    future.result(timeout=5)  # Wait for result with timeout
                                 else:
-                                    parameters_dict[arg_name] = args[i]
+                                    # If loop is not running, run the coroutine
+                                    loop.run_until_complete(coroutine)
+                            else:  # tool_execution
+                                # Enhanced format
+                                event_data = {
+                                    'tool': tool_name,
+                                    'status': status,
+                                    'timestamp': time.time(),
+                                    'tool_id': tool_id,
+                                    'isPlugin': True,  # Mark that this is a plugin execution
+                                    'pluginName': plugin_name  # Include the original plugin name
+                                }
+                                
+                                if parameters:
+                                    event_data['parameters'] = parameters
+                                if error:
+                                    event_data['error'] = error
+                                if duration:
+                                    event_data['duration'] = duration
+                                    
+                                coroutine = sio.emit('tool_execution', event_data, room=current_sid)
+                                if loop.is_running():
+                                    # If loop is running, create a task
+                                    future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+                                    future.result(timeout=5)  # Wait for result with timeout
+                                else:
+                                    # If loop is not running, run the coroutine
+                                    loop.run_until_complete(coroutine)
+                                
+                                # Print tool usage when emitted
+                                print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status} - Plugin: {plugin_name}")
+                        except Exception as e:
+                            print(f"Error emitting {event_type} event: {e}")
+                            traceback.print_exc()  # Print the full traceback to help with debugging
                     
-                    # Add keyword arguments
-                    for k, v in kwargs.items():
-                        # Convert complex objects to strings to avoid serialization issues
-                        if isinstance(v, (dict, list, tuple, set)):
-                            parameters_dict[k] = str(v)
-                        else:
-                            parameters_dict[k] = v
-                    
-                    # Print parameters
-                    if parameters_dict and tool_name:
-                        print(f"📝 Parameters:")
-                        for param_name, param_value in parameters_dict.items():
-                            print(f"   - {param_name}: {param_value}")
-                        print()
-                    
-                    # Convert parameters to JSON string for logging
-                    parameters_json = json.dumps(parameters_dict, default=str)
-                    
-                    # Add to active tools tracking
-                    tool_id = None
-                    if tool_name:
-                        tool_id = f"{tool_name}_{time.time()}"
-                        active_tools[tool_id] = {
-                            'name': tool_name,
-                            'start_time': time.time(),
-                            'parameters': parameters_dict
-                        }
-                    
-                    # Log and send notification that tool is starting
-                    if tool_name:
-                        print(f"Tool started: {tool_name} with parameters: {parameters_json}")
-                        # Use our synchronous function instead of create_task
-                        sync_emit_tool_event('tool_usage', tool_name, 'started')
-                        sync_emit_tool_event('tool_execution', tool_name, 'started', 
-                                           tool_id=tool_id, parameters=parameters_json)
-                    
-                    try:
-                        # Call the original method
-                        result = orig_method(*args, **kwargs)
+                    def wrapper(*args, **kwargs):
+                        # Get the friendly tool name
+                        tool_name = get_friendly_tool_name(plugin_name, method_name)
                         
-                        # Log successful completion
+                        # Highly visible output for tool selection
                         if tool_name:
-                            # Update active tools tracking
-                            if tool_id in active_tools:
-                                active_tools[tool_id]['end_time'] = time.time()
-                                active_tools[tool_id]['status'] = 'completed'
-                                duration = time.time() - active_tools[tool_id]['start_time']
-                                
-                            print(f"Tool completed successfully: {tool_name}")
-                            # Print result summary
-                            if isinstance(result, str):
-                                result_preview = result[:150] + "..." if len(result) > 150 else result
-                                print(f"📋 Result preview: {result_preview}\n")
-                                
-                            # Use our synchronous function instead of asyncio.create_task
-                            sync_emit_tool_event('tool_usage', tool_name, 'completed')
-                            sync_emit_tool_event('tool_execution', tool_name, 'completed', 
-                                               tool_id=tool_id, duration=duration)
-                                
-                        return result
-                    except Exception as e:
-                        # Log failure
-                        if tool_name:
-                            # Update active tools tracking
-                            if tool_id in active_tools:
-                                active_tools[tool_id]['end_time'] = time.time()
-                                active_tools[tool_id]['status'] = 'failed'
-                                active_tools[tool_id]['error'] = str(e)
-                                duration = time.time() - active_tools[tool_id]['start_time']
+                            print(f"\n{'='*50}")
+                            print(f"🔧 TOOL SELECTED BY LLM: '{tool_name}'")
+                            print(f"📝 PLUGIN: {plugin_name} → FUNCTION: {method_name}")
+                            print(f"{'='*50}\n")
+                        
+                        # Capture parameters for logging
+                        parameters_dict = {}
+                        # Get positional args from the original function signature
+                        if hasattr(orig_method, '__code__'):
+                            param_names = orig_method.__code__.co_varnames[:orig_method.__code__.co_argcount]
+                            # Skip 'self' parameter if it's the first one
+                            if param_names and param_names[0] == 'self':
+                                param_names = param_names[1:]
                             
-                            print(f"❌ Tool failed: {tool_name} with error: {str(e)}")
-                            # Use our synchronous function instead of asyncio.create_task
-                            sync_emit_tool_event('tool_execution', tool_name, 'failed', 
-                                               tool_id=tool_id, error=str(e), duration=duration)
+                            # Map positional args to their parameter names
+                            for i, arg_name in enumerate(param_names):
+                                if i < len(args):
+                                    # Convert complex objects to strings to avoid serialization issues
+                                    if isinstance(args[i], (dict, list, tuple, set)):
+                                        parameters_dict[arg_name] = str(args[i])
+                                    else:
+                                        parameters_dict[arg_name] = args[i]
                         
-                        # Re-raise the original exception
-                        raise
+                        # Add keyword arguments
+                        for k, v in kwargs.items():
+                            # Convert complex objects to strings to avoid serialization issues
+                            if isinstance(v, (dict, list, tuple, set)):
+                                parameters_dict[k] = str(v)
+                            else:
+                                parameters_dict[k] = v
+                        
+                        # Print parameters
+                        if parameters_dict and tool_name:
+                            print(f"📝 Parameters:")
+                            for param_name, param_value in parameters_dict.items():
+                                print(f"   - {param_name}: {param_value}")
+                            print()
+                        
+                        # Convert parameters to JSON string for logging
+                        parameters_json = json.dumps(parameters_dict, default=str)
+                        
+                        # Add to active tools tracking
+                        tool_id = None
+                        if tool_name:
+                            tool_id = f"{tool_name}_{time.time()}"
+                            active_tools[tool_id] = {
+                                'name': tool_name,
+                                'start_time': time.time(),
+                                'parameters': parameters_dict
+                            }
+                        
+                        # Log and send notification that tool is starting
+                        if tool_name:
+                            print(f"Tool started: {tool_name} with parameters: {parameters_json}")
+                            # Use our synchronous function instead of create_task
+                            sync_emit_tool_event('tool_usage', tool_name, 'started')
+                            sync_emit_tool_event('tool_execution', tool_name, 'started', 
+                                               tool_id=tool_id, parameters=parameters_json)
+                        
+                        try:
+                            # Call the original method
+                            result = orig_method(*args, **kwargs)
+                            
+                            # Log successful completion
+                            if tool_name:
+                                # Update active tools tracking
+                                if tool_id in active_tools:
+                                    active_tools[tool_id]['end_time'] = time.time()
+                                    active_tools[tool_id]['status'] = 'completed'
+                                    duration = time.time() - active_tools[tool_id]['start_time']
+                                    
+                                print(f"Tool completed successfully: {tool_name}")
+                                # Print result summary
+                                if isinstance(result, str):
+                                    result_preview = result[:150] + "..." if len(result) > 150 else result
+                                    print(f"📋 Result preview: {result_preview}\n")
+                                    
+                                # Use our synchronous function instead of asyncio.create_task
+                                sync_emit_tool_event('tool_usage', tool_name, 'completed')
+                                sync_emit_tool_event('tool_execution', tool_name, 'completed', 
+                                                   tool_id=tool_id, duration=duration)
+                                    
+                            return result
+                        except Exception as e:
+                            # Log failure
+                            if tool_name:
+                                # Update active tools tracking
+                                if tool_id in active_tools:
+                                    active_tools[tool_id]['end_time'] = time.time()
+                                    active_tools[tool_id]['status'] = 'failed'
+                                    active_tools[tool_id]['error'] = str(e)
+                                    duration = time.time() - active_tools[tool_id]['start_time']
+                                
+                                print(f"❌ Tool failed: {tool_name} with error: {str(e)}")
+                                # Use our synchronous function instead of asyncio.create_task
+                                sync_emit_tool_event('tool_execution', tool_name, 'failed', 
+                                                   tool_id=tool_id, error=str(e), duration=duration)
+                            
+                            # Re-raise the original exception
+                            raise
+                    
+                    return wrapper
                 
-                return wrapper
-            
-            # Replace the original method with our wrapper
-            setattr(plugin, attr_name, make_wrapper(attr_name, original_method))
+                # Replace the original method with our wrapper
+                setattr(plugin, attr_name, make_wrapper(attr_name, original_method))
+        except Exception as e:
+            print(f"Error wrapping method {attr_name}: {str(e)}")
+            traceback.print_exc()  # Print traceback for debugging
     
     return plugin
 
