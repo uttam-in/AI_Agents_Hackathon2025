@@ -368,7 +368,7 @@ async def disconnect(sid):
 @sio.event
 async def chat_message(sid, data):
     """Handle incoming chat messages from the client"""
-    global global_agent, global_thread, current_sid
+    global global_agent, global_thread, current_sid    
     
     message = data.get('message', '')
     print(f"Received message via Socket.IO: {message}")
@@ -492,7 +492,7 @@ You are an expert guide for anyone learning about offensive and defensive cybers
     cl.user_session.set("thread", thread)
     
     # Store references globally for Socket.IO
-    global global_agent, global_thread
+    
     global_agent = global_agent
     global_thread = thread        
     
