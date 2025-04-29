@@ -107,6 +107,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                     parameters_json = json.dumps(parameters_dict, default=str)
                     
                     # Add to active tools tracking
+                    tool_id = None
                     if tool_name:
                         tool_id = f"{tool_name}_{time.time()}"
                         active_tools[tool_id] = {
@@ -118,25 +119,30 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                     # Log and send notification that tool is starting
                     if tool_name:
                         print(f"Tool started: {tool_name} with parameters: {parameters_json}")
-                        # Use a non-blocking approach to emit via Socket.IO
+                        # Direct socket emit instead of trying to get event loop
                         try:
-                            loop = asyncio.get_event_loop()
-                            if loop.is_running():
-                                # Send both legacy and new format for compatibility
-                                loop.create_task(sio.emit('tool_usage', {
+                            # Send legacy format
+                            asyncio.run_coroutine_threadsafe(
+                                sio.emit('tool_usage', {
                                     'tool': tool_name,
                                     'status': 'started',
                                     'timestamp': time.time()
-                                }, room=current_sid))
-                                
-                                # Send enhanced tool execution event with parameters
-                                loop.create_task(sio.emit('tool_execution', {
+                                }, room=current_sid),
+                                asyncio.get_event_loop()
+                            )
+                            
+                            # Send enhanced tool execution event
+                            asyncio.run_coroutine_threadsafe(
+                                sio.emit('tool_execution', {
                                     'tool': tool_name,
                                     'status': 'started',
                                     'timestamp': time.time(),
                                     'parameters': parameters_json,
-                                    'tool_id': tool_id if tool_name else None
-                                }, room=current_sid))
+                                    'tool_id': tool_id
+                                }, room=current_sid),
+                                asyncio.get_event_loop()
+                            )
+                            print(f"Successfully emitted tool_execution event for {tool_name}")
                         except Exception as e:
                             print(f"Error emitting tool start: {e}")
                     
@@ -152,25 +158,30 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 active_tools[tool_id]['status'] = 'completed'
                                 
                             print(f"Tool completed successfully: {tool_name}")
-                            # Use a non-blocking approach to emit via Socket.IO
+                            # Direct socket emit for completion
                             try:
-                                loop = asyncio.get_event_loop()
-                                if loop.is_running():
-                                    # Send both legacy and new format for compatibility
-                                    loop.create_task(sio.emit('tool_usage', {
+                                # Send legacy format
+                                asyncio.run_coroutine_threadsafe(
+                                    sio.emit('tool_usage', {
                                         'tool': tool_name,
                                         'status': 'completed',
                                         'timestamp': time.time()
-                                    }, room=current_sid))
-                                    
-                                    # Send enhanced tool execution completion event
-                                    loop.create_task(sio.emit('tool_execution', {
+                                    }, room=current_sid),
+                                    asyncio.get_event_loop()
+                                )
+                                
+                                # Send enhanced tool execution completion event
+                                asyncio.run_coroutine_threadsafe(
+                                    sio.emit('tool_execution', {
                                         'tool': tool_name,
                                         'status': 'completed',
                                         'timestamp': time.time(),
-                                        'tool_id': tool_id if tool_name else None,
+                                        'tool_id': tool_id,
                                         'duration': time.time() - active_tools[tool_id]['start_time'] if tool_id in active_tools else None
-                                    }, room=current_sid))
+                                    }, room=current_sid),
+                                    asyncio.get_event_loop()
+                                )
+                                print(f"Successfully emitted tool_completion event for {tool_name}")
                             except Exception as e:
                                 print(f"Error emitting tool completion: {e}")
                                 
@@ -185,19 +196,21 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 active_tools[tool_id]['error'] = str(e)
                             
                             print(f"Tool failed: {tool_name} with error: {str(e)}")
-                            # Use a non-blocking approach to emit via Socket.IO
+                            # Direct socket emit for failure
                             try:
-                                loop = asyncio.get_event_loop()
-                                if loop.is_running():
-                                    # Send enhanced tool execution failure event
-                                    loop.create_task(sio.emit('tool_execution', {
+                                # Send enhanced tool execution failure event
+                                asyncio.run_coroutine_threadsafe(
+                                    sio.emit('tool_execution', {
                                         'tool': tool_name,
                                         'status': 'failed',
                                         'timestamp': time.time(),
-                                        'tool_id': tool_id if tool_name else None,
+                                        'tool_id': tool_id,
                                         'error': str(e),
                                         'duration': time.time() - active_tools[tool_id]['start_time'] if tool_id in active_tools else None
-                                    }, room=current_sid))
+                                    }, room=current_sid),
+                                    asyncio.get_event_loop()
+                                )
+                                print(f"Successfully emitted tool_failure event for {tool_name}")
                             except Exception as emit_error:
                                 print(f"Error emitting tool failure: {emit_error}")
                         
