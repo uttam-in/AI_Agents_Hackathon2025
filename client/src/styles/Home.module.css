@@ -248,23 +248,50 @@
 }
 
 .message {
-  width: 95%;
   padding: 16px 20px;
   border-radius: 12px;
   position: relative;
   margin-bottom: 16px;
-  border-left: 3px solid transparent;
   backdrop-filter: blur(10px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   display: flex;
+  width: auto;
+  max-width: 85%;
+  min-width: 50px;
+  align-items: center;
+}
+
+.userMessage {
+  align-self: flex-end;
+  background-color: rgba(0, 150, 255, 0.2);
+  color: var(--text-light);
+  border-right: none;
+  border-left: none;
+  flex-direction: row-reverse;
+  border-radius: 12px;
+  margin-right: 10px;
+}
+
+.assistantMessage {
+  align-self: flex-start;
+  background-color: rgba(17, 26, 44, 0.85);
+  color: var(--text-light);
+  border-left: none;
+  flex-direction: row;
+  border-radius: 12px;
+  margin-left: 10px;
 }
 
 .messageContent {
   flex: 1;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1.6;
   overflow-wrap: break-word;
+  text-align: left;
+  color: var(--text-light); /* Changed from Matrix green to standard light text */
+  font-family: var(--font-geist-sans); /* Changed from monospace to standard font */
+  padding: 0 10px;
 }
 
 @keyframes avatarPulse {
@@ -274,13 +301,7 @@
 }
 
 .formatOptionsContainer {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding: 8px 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent;
+  display: none;
 }
 
 .formatOption {
@@ -497,36 +518,34 @@
   display: flex;
   padding: 16px;
   border-top: 1px solid var(--border-color);
-  background-color: var(--card-bg-dark);
+  background-color: rgba(8, 13, 24, 0.95);
   position: relative;
   z-index: 2;
 }
 
 .input {
   flex: 1;
-  padding: 14px 18px;
+  padding: 12px 16px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background-color: rgba(6, 11, 20, 0.7);
   color: var(--text-light);
-  font-family: var(--font-geist-mono);
-  font-size: 0.9rem;
-  box-shadow: var(--border-glow);
+  font-family: var(--font-geist-sans);
+  font-size: 1.4rem;
   transition: all 0.3s ease;
 }
 
 .input:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--primary-color), var(--border-glow);
-  border-color: transparent;
+  border-color: var(--primary-color);
 }
 
 .sendButton {
   margin-left: 12px;
-  background-color: var(--primary-color);
+  background-color: #0096ff;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0 20px;
   height: 48px;
   font-weight: 500;
@@ -535,13 +554,13 @@
   font-family: var(--font-geist-sans);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 10px rgba(0, 168, 255, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 150, 255, 0.3);
 }
 
 .sendButton:hover {
-  background-color: var(--secondary-color);
+  background-color: #0084c7;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 168, 255, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 150, 255, 0.5);
 }
 
 .sendButton:active {
@@ -801,15 +820,15 @@
 }
 
 .avatar {
-  width: 50px;
-  height: 50px;
-  margin-right: 12px;
-  position: relative;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
   flex-shrink: 0;
+  margin: 0 10px;
+  position: relative; /* Changed from static to relative to position the glow effect */
 }
 
 .avatarGlow {
@@ -821,75 +840,44 @@
   pointer-events: none;
 }
 
-.userAvatarImage {
-  width: 50px;
-  height: 50px;
+.userAvatarImage,
+.aiAvatarImage {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  background-color: rgba(74, 137, 220, 0.1);
-  border: 2px solid #4a89dc;
-  box-shadow: 0 0 10px rgba(74, 137, 220, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.userAvatarImage {
+  background-color: rgba(0, 150, 255, 0.2);
+  border: 2px solid #0096ff;
+  box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
 }
 
 .aiAvatarImage {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  overflow: hidden;
   background-color: rgba(0, 242, 255, 0.1);
   border: 2px solid var(--accent-color);
   box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.messageName {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-  position: relative;
+/* Enhanced glow effects */
+.userMessage .avatarGlow {
+  box-shadow: 0 0 15px rgba(0, 150, 255, 0.7);
+  border: 2px solid rgba(0, 150, 255, 0.3);
 }
 
-/* Remove the text display that was using ::after */
-.messageName::after {
-  content: none;
+.assistantMessage .avatarGlow {
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.7);
+  border: 2px solid rgba(0, 242, 255, 0.3);
 }
 
-/* Position the AI message avatar on the left */
-.assistantMessage .messageName {
-  justify-content: flex-start;
-}
-
-/* Position the user message avatar on the right */
-.userMessage .messageName {
-  justify-content: flex-end;
-}
-
-.userMessage {
-  align-self: flex-end;
-  background-color: rgba(17, 26, 44, 0.7);
-  color: var(--text-light);
-  border-right: 3px solid var(--primary-color);
-  border-left: none;
-  flex-direction: row-reverse;
-  width: 85%;
-}
-
-.assistantMessage {
-  align-self: flex-start;
-  background-color: rgba(17, 26, 44, 0.7);
-  color: var(--text-light);
-  border-left: 3px solid var(--accent-color);
-  flex-direction: row;
-  width: 85%;
-}
-
-/* Update the margin for avatar in assistant message */
-.userMessage .avatar {
-  margin-right: 0;
-  margin-left: 12px;
+@keyframes avatarPulse {
+  0% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.2); }
+  100% { opacity: 0.7; transform: scale(1); }
 }

@@ -573,17 +573,6 @@ export default function Home() {
                         message.content
                       ) : (
                         <>
-                          {/* Text format options for AI responses */}
-                          <div className={styles.formatOptionsContainer}>
-                            {formatOptions.map(option => (
-                              <TextFormatOption 
-                                key={option.id}
-                                text={option.name} 
-                                active={textFormat === option.id} 
-                                onClick={() => setTextFormat(option.id as 'default' | 'code' | 'matrix')}
-                              />
-                            ))}
-                          </div>
                           <div className={styles.markdownContent}>
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
