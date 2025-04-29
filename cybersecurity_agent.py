@@ -354,9 +354,9 @@ async def on_message(message: cl.Message):
 # Socket.IO event handlers
 @sio.event
 async def connect(sid, environ):
+    global current_sid
     print(f"Client connected via Socket.IO: {sid}")
     # Set the current SID for tool tracking
-    global current_sid
     current_sid = sid
 
 @sio.event
@@ -366,10 +366,10 @@ async def disconnect(sid):
 @sio.event
 async def chat_message(sid, data):
     """Handle incoming chat messages from the client"""
+    global global_agent, global_thread, current_sid
+    
     message = data.get('message', '')
     print(f"Received message via Socket.IO: {message}")
-    
-    global global_agent, global_thread, current_sid
     
     # Always update the current SID for tool tracking
     current_sid = sid
@@ -403,7 +403,6 @@ async def chat_message(sid, data):
         register_tool_tracking(kernel, sid)
     else:
         # Make sure we're using the current session for tool tracking notifications
-        global current_sid
         current_sid = sid
     
     response_text = ""
