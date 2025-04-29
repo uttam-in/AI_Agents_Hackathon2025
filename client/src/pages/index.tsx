@@ -152,6 +152,9 @@ export default function Home() {
     { id: 'matrix', name: 'Matrix' },
   ];
 
+  // State for active tools
+  const [activeTools, setActiveTools] = useState<string[]>([]);
+
   // Connect to the Socket.IO server
   useEffect(() => {
     const socketInstance = io("http://localhost:8000", {
@@ -272,6 +275,20 @@ export default function Home() {
       setMessages(prevMessages => [...prevMessages, errorMessage]);
       setLoading(false);
       setCurrentAssistantMessage(null);
+    });
+
+    // Listen for tool usage events
+    socketInstance.on("tool_usage", (data) => {
+      console.log("Tool usage:", data);
+      const { tool, status } = data;
+      
+      if (status === 'started') {
+        // Add tool to active tools
+        setActiveTools(prev => [...prev, tool]);
+      } else if (status === 'completed') {
+        // Remove tool from active tools
+        setActiveTools(prev => prev.filter(t => t !== tool));
+      }
     });
 
     setSocket(socketInstance);
@@ -682,6 +699,23 @@ export default function Home() {
           </div>
           
           <div className={styles.splitContainer}>
+            {/* Active Tools Display */}
+            {activeTools.length > 0 && (
+              <div className={styles.activeToolsDisplay}>
+                <div className={styles.activeToolsHeader}>
+                  <span>🛠️ Tools in use:</span>
+                </div>
+                <div className={styles.activeToolsList}>
+                  {activeTools.map((tool, index) => (
+                    <div key={`tool-${index}`} className={styles.activeTool}>
+                      <span className={styles.pulsingDot}></span>
+                      <span>{tool}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* Resize handle */}
             <div className={styles.resizeHandle} id="resize-handle"></div>
             
