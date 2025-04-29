@@ -105,6 +105,16 @@ interface TerminalCommand {
   workingDir?: string; // Current working directory for the command
 }
 
+// Interface for tool execution logging
+interface ToolExecution {
+  id: string;
+  name: string;
+  startTime: number;
+  endTime?: number;
+  status: 'started' | 'completed' | 'failed';
+  parameters?: string;
+}
+
 export default function Home() {
   // Get the client from the context (already initialized in _app.tsx)
   const client = useContext(ChainlitContext);
@@ -145,8 +155,15 @@ export default function Home() {
   // State for active tools
   const [activeTools, setActiveTools] = useState<string[]>([]);
 
+  // State for tool executions
+  const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
+  
+  // Add new state for tool execution history display
+  const [showToolHistory, setShowToolHistory] = useState<boolean>(false);
+
   // Connect to the Socket.IO server
   useEffect(() => {
+    // const socketInstance = io("http://localhost:8000", {
     const socketInstance = io("http://192.168.254.179:8000", {
       transports: ["websocket"],
       autoConnect: true,
@@ -267,17 +284,70 @@ export default function Home() {
       setCurrentAssistantMessage(null);
     });
 
-    // Listen for tool usage events
+    // Listen for tool execution events
+    socketInstance.on("tool_execution", (data) => {
+      console.log("Tool execution event:", data);
+      const { tool, status, parameters } = data;
+      
+      if (status === 'started') {
+        // Add new tool execution to the log
+        const newToolExecution: ToolExecution = {
+          id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: tool,
+          startTime: Date.now(),
+          status: 'started',
+          parameters: parameters
+        };
+        setToolExecutions(prev => [...prev, newToolExecution]);
+        
+        // Also add to active tools
+        setActiveTools(prev => [...prev, tool]);
+      } else if (status === 'completed' || status === 'failed') {
+        // Update existing tool execution
+        setToolExecutions(prev => 
+          prev.map(execution => 
+            execution.name === tool && !execution.endTime
+              ? { ...execution, endTime: Date.now(), status }
+              : execution
+          )
+        );
+        
+        // Remove from active tools if completed
+        if (status === 'completed') {
+          setActiveTools(prev => prev.filter(t => t !== tool));
+        }
+      }
+    });
+
+    // Listen for legacy tool usage events for backward compatibility
     socketInstance.on("tool_usage", (data) => {
-      console.log("Tool usage:", data);
+      console.log("Tool usage (legacy):", data);
       const { tool, status } = data;
       
       if (status === 'started') {
         // Add tool to active tools
         setActiveTools(prev => [...prev, tool]);
+        
+        // Add to tool executions log
+        const newToolExecution: ToolExecution = {
+          id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: tool,
+          startTime: Date.now(),
+          status: 'started'
+        };
+        setToolExecutions(prev => [...prev, newToolExecution]);
       } else if (status === 'completed') {
         // Remove tool from active tools
         setActiveTools(prev => prev.filter(t => t !== tool));
+        
+        // Update tool executions log
+        setToolExecutions(prev => 
+          prev.map(execution => 
+            execution.name === tool && !execution.endTime
+              ? { ...execution, endTime: Date.now(), status: 'completed' }
+              : execution
+          )
+        );
       }
     });
 
@@ -652,6 +722,7 @@ export default function Home() {
     </div>
   );
 
+  // Add tool history component to the right of the chat container
   return (
     <>
       <Head>
@@ -685,6 +756,14 @@ export default function Home() {
                   <span className={styles.disconnected}>Disconnected</span>
                 }
               </div>
+              <div className={styles.toolHistoryToggle}>
+                <button 
+                  className={`${styles.historyButton} ${showToolHistory ? styles.activeButton : ''}`}
+                  onClick={() => setShowToolHistory(!showToolHistory)}
+                >
+                  Tool History
+                </button>
+              </div>
             </div>
           </div>
           
@@ -702,6 +781,69 @@ export default function Home() {
                       <span>{tool}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Tool History Sidebar - Conditionally shown */}
+            {showToolHistory && (
+              <div className={styles.toolHistorySidebar}>
+                <div className={styles.toolHistoryHeader}>
+                  <h3>Tool Execution History</h3>
+                  <button 
+                    className={styles.closeButton}
+                    onClick={() => setShowToolHistory(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className={styles.toolHistoryList}>
+                  {toolExecutions.length === 0 ? (
+                    <div className={styles.noHistory}>No tool executions yet</div>
+                  ) : (
+                    <>
+                      {toolExecutions.map((execution) => (
+                        <div 
+                          key={execution.id} 
+                          className={`${styles.toolExecutionItem} ${
+                            execution.status === 'completed' ? styles.completedTool : 
+                            execution.status === 'failed' ? styles.failedTool : 
+                            styles.runningTool
+                          }`}
+                        >
+                          <div className={styles.toolName}>
+                            <span className={styles.toolIcon}>🔧</span>
+                            {execution.name}
+                          </div>
+                          <div className={styles.toolTimestamp}>
+                            {new Date(execution.startTime).toLocaleTimeString()}
+                            {execution.endTime && (
+                              <span className={styles.duration}>
+                                ({((execution.endTime - execution.startTime) / 1000).toFixed(2)}s)
+                              </span>
+                            )}
+                          </div>
+                          <div className={styles.toolStatus}>
+                            {execution.status === 'started' ? (
+                              <span className={styles.runningStatus}>Running</span>
+                            ) : execution.status === 'completed' ? (
+                              <span className={styles.completedStatus}>Completed</span>
+                            ) : (
+                              <span className={styles.failedStatus}>Failed</span>
+                            )}
+                          </div>
+                          {execution.parameters && (
+                            <div className={styles.toolParameters}>
+                              <details>
+                                <summary>Parameters</summary>
+                                <pre>{execution.parameters}</pre>
+                              </details>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
             )}

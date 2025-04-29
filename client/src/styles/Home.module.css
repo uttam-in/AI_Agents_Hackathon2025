@@ -978,3 +978,276 @@
   from { transform: translate(-50%, -20px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
+
+/* Tool History Sidebar */
+.toolHistorySidebar {
+  position: absolute;
+  top: 80px;
+  right: 0;
+  width: 300px;
+  height: calc(100vh - 80px);
+  background-color: var(--background-darker);
+  border-left: 1px solid var(--accent-color);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: -2px 0 10px rgba(0, 223, 255, 0.1);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.toolHistoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: rgba(0, 223, 255, 0.1);
+  border-bottom: 1px solid var(--accent-color);
+}
+
+.toolHistoryHeader h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--accent-color);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-size: 20px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.closeButton:hover {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.toolHistoryList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) var(--background-darker);
+}
+
+.toolHistoryList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.toolHistoryList::-webkit-scrollbar-track {
+  background: var(--background-darker);
+}
+
+.toolHistoryList::-webkit-scrollbar-thumb {
+  background-color: var(--accent-color);
+  border-radius: 3px;
+}
+
+.noHistory {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-top: 20px;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Tool Execution Items */
+.toolExecutionItem {
+  background-color: rgba(0, 223, 255, 0.05);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-left: 3px solid var(--accent-color);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.toolExecutionItem:hover {
+  background-color: rgba(0, 223, 255, 0.1);
+}
+
+.runningTool {
+  border-left-color: #ffcc00;
+}
+
+.completedTool {
+  border-left-color: #00ff88;
+}
+
+.failedTool {
+  border-left-color: #ff4444;
+}
+
+.toolName {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.toolIcon {
+  font-size: 16px;
+}
+
+.toolTimestamp {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.duration {
+  margin-left: 5px;
+  font-style: italic;
+}
+
+.toolStatus {
+  font-size: 11px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.runningStatus {
+  color: #ffcc00;
+  display: flex;
+  align-items: center;
+}
+
+.runningStatus::after {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #ffcc00;
+  border-radius: 50%;
+  margin-left: 5px;
+  animation: pulse 1.5s infinite;
+}
+
+.completedStatus {
+  color: #00ff88;
+}
+
+.failedStatus {
+  color: #ff4444;
+}
+
+.toolParameters {
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.toolParameters details {
+  padding: 5px 0;
+}
+
+.toolParameters summary {
+  cursor: pointer;
+  color: var(--accent-color);
+  font-size: 11px;
+}
+
+.toolParameters pre {
+  margin: 5px 0;
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #ddd;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* Tool History Button in Header */
+.toolHistoryToggle {
+  margin-left: 15px;
+  position: relative;
+}
+
+.historyButton {
+  background-color: rgba(0, 223, 255, 0.1);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.historyButton:hover {
+  background-color: rgba(0, 223, 255, 0.2);
+}
+
+.activeButton {
+  background-color: rgba(0, 223, 255, 0.3);
+  box-shadow: 0 0 5px var(--accent-color);
+}
+
+/* Active Tools Display in the main container */
+.activeToolsDisplay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 8px;
+  z-index: 10;
+  max-width: 250px;
+}
+
+.activeToolsHeader {
+  font-size: 12px;
+  color: var(--accent-color);
+  margin-bottom: 5px;
+}
+
+.activeToolsList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.activeTool {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #fff;
+}
+
+.pulsingDot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-color);
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse 1.5s infinite;
+}
