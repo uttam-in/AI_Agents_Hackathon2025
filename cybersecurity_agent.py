@@ -516,4 +516,4 @@ if __name__ == "__main__":
     # This is the correct way to start Chainlit instead of chainlit.cli.run_app
     import subprocess
     print("Starting Chainlit on port 8080...")
-    subprocess.run([sys.executable, "-m", "chainlit", "run", "cybersecurity_agent.py", "--port", "8080"])
+    subprocess.run([sys.executable, "-m", "chainlit", "run", "cybersecurity_agent.py", "--host", "0.0.0.0", "--port", "8080"])
