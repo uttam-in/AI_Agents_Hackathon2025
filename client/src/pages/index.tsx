@@ -40,6 +40,13 @@ export default function Home() {
   // Current assistant message being streamed
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<Message | null>(null);
 
+  // Tool results state
+  const [toolResults, setToolResults] = useState<{
+    title: string;
+    content: string;
+    timestamp: number;
+  } | null>(null);
+
   // Connect to the Socket.IO server
   useEffect(() => {
     const socketInstance = io("http://localhost:8000", {
@@ -131,6 +138,16 @@ export default function Home() {
           return prevMessage;
         });
       }
+    });
+
+    // Handle tool results
+    socketInstance.on("tool_result", (data) => {
+      console.log("Received tool result:", data);
+      setToolResults({
+        title: data.tool || "Tool Result",
+        content: data.result,
+        timestamp: Date.now()
+      });
     });
 
     socketInstance.on("response_complete", (data) => {
@@ -253,86 +270,134 @@ export default function Home() {
         className={`${styles.page} ${geistSans.variable} ${geistMono.variable}`}
       >
         <main className={styles.main}>
-          <h1 className={styles.title}>Cybersecurity AI Agent</h1>
-          
-          <div className={styles.connectionStatus}>
-            Status: {connected ? 
-              <span className={styles.connected}>Connected</span> : 
-              <span className={styles.disconnected}>Disconnected</span>
-            }
+          {/* Header Bar with Status */}
+          <div className={styles.headerBar}>
+            <div className={styles.logoContainer}>
+              <span className={styles.logoIcon}>🛡️</span>
+              <h1 className={styles.title}>CyberSec Command Center</h1>
+            </div>
+            <div className={styles.statusBar}>
+              <div className={styles.statusItem}>
+                <span>System:</span>
+                <span>Active</span>
+              </div>
+              <div className={styles.connectionStatus}>
+                Status: {connected ? 
+                  <span className={styles.connected}>Connected</span> : 
+                  <span className={styles.disconnected}>Disconnected</span>
+                }
+              </div>
+            </div>
           </div>
           
-          <div className={styles.chatContainer}>
-            <div className={styles.messagesList}>
-              {consolidatedMessages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`${styles.message} ${
-                    message.type === 'user' ? styles.userMessage : styles.assistantMessage
-                  }`}
+          <div className={styles.splitContainer}>
+            {/* Chat container - 60% width */}
+            <div className={styles.chatContainer}>
+              <div className={styles.messagesList}>
+                {consolidatedMessages.map((message) => (
+                  <div 
+                    key={message.id} 
+                    className={`${styles.message} ${
+                      message.type === 'user' ? styles.userMessage : styles.assistantMessage
+                    }`}
+                  >
+                    <div className={styles.messageName}>
+                      {message.type === 'user' ? 'User' : 'CyberSec AI'}
+                    </div>
+                    <div className={styles.messageContent}>
+                      {message.type === 'user' ? (
+                        message.content
+                      ) : (
+                        <div className={styles.markdownContent}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                            components={{
+                              p: ({node, ...props}) => <p className={styles.paragraph} {...props} />,
+                              pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
+                              code: ({node, inline, ...props}) => 
+                                inline 
+                                  ? <code className={styles.inlineCode} {...props} />
+                                  : <code className={styles.code} {...props} />,
+                              h1: ({node, ...props}) => <h1 className={styles.heading} {...props} />,
+                              h2: ({node, ...props}) => <h2 className={styles.heading} {...props} />,
+                              h3: ({node, ...props}) => <h3 className={styles.heading} {...props} />,
+                              ul: ({node, ...props}) => <ul className={styles.list} {...props} />,
+                              ol: ({node, ...props}) => <ol className={styles.list} {...props} />,
+                              li: ({node, ...props}) => <li className={styles.listItem} {...props} />
+                            }}
+                          >
+                            {formatMessage(message.content)}
+                          </ReactMarkdown>
+                          {message.type === 'assistant' && loading && message.id === currentAssistantMessage?.id && (
+                            <span className={styles.cursorBlink}></span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {loading && !currentAssistantMessage && (
+                  <div className={styles.loadingContainer}>
+                    <div className={styles.loadingDots}>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+              <div className={styles.inputContainer}>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Enter command or ask cybersecurity question..."
+                  disabled={loading || !connected}
+                />
+                <button 
+                  className={styles.sendButton}
+                  onClick={handleSendMessage}
+                  disabled={loading || !connected}
                 >
-                  <div className={styles.messageName}>
-                    {message.type === 'user' ? 'You' : 'CyberSec Agent'}
-                  </div>
-                  <div className={styles.messageContent}>
-                    {message.type === 'user' ? (
-                      message.content
-                    ) : (
-                      <div className={styles.markdownContent}>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeHighlight, rehypeRaw]}
-                          components={{
-                            // Add custom components to style markdown elements
-                            p: ({node, ...props}) => <p className={styles.paragraph} {...props} />,
-                            pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
-                            code: ({node, inline, ...props}) => 
-                              inline 
-                                ? <code className={styles.inlineCode} {...props} />
-                                : <code className={styles.code} {...props} />,
-                            h1: ({node, ...props}) => <h1 className={styles.heading} {...props} />,
-                            h2: ({node, ...props}) => <h2 className={styles.heading} {...props} />,
-                            h3: ({node, ...props}) => <h3 className={styles.heading} {...props} />,
-                            ul: ({node, ...props}) => <ul className={styles.list} {...props} />,
-                            ol: ({node, ...props}) => <ol className={styles.list} {...props} />,
-                            li: ({node, ...props}) => <li className={styles.listItem} {...props} />
-                          }}
-                        >
-                          {formatMessage(message.content)}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {loading && !currentAssistantMessage && (
-                <div className={styles.loadingContainer}>
-                  <div className={styles.loadingDots}>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                  Execute
+                </button>
+              </div>
             </div>
-            <div className={styles.inputContainer}>
-              <input
-                type="text"
-                className={styles.input}
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask the cybersecurity agent..."
-                disabled={loading || !connected}
-              />
-              <button 
-                className={styles.sendButton}
-                onClick={handleSendMessage}
-                disabled={loading || !connected}
-              >
-                Send
-              </button>
+            
+            {/* Tool results container - 40% width */}
+            <div className={styles.toolResultsContainer}>
+              <div className={styles.toolResultsHeader}>
+                <h2>{toolResults ? toolResults.title : 'Security Analysis'}</h2>
+                <span>{toolResults ? new Date(toolResults.timestamp).toLocaleTimeString() : ''}</span>
+              </div>
+              <div className={styles.toolResultsContent}>
+                {toolResults ? (
+                  <div className={styles.markdownContent}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                      components={{
+                        pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
+                        code: ({node, inline, ...props}) => 
+                          inline 
+                            ? <code className={styles.inlineCode} {...props} />
+                            : <code className={styles.code} {...props} />
+                      }}
+                    >
+                      {toolResults.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className={styles.noToolResults}>
+                    <p>Awaiting security tool execution...</p>
+                    <p>Use the agent to run security tools like nmap, metasploit, or other available tools.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </main>
