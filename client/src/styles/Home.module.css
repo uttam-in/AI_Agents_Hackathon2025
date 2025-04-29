@@ -14,9 +14,10 @@
   --border-glow: 0 0 10px rgba(0, 178, 255, 0.3);
   --card-bg-dark: #111a2c;
   --card-bg-light: #ffffff;
-  --terminal-green: #00ff9d;
-  --terminal-bg: #060b14;
-  --terminal-prompt-color: #ffae00;
+  --terminal-green: #00d48a;
+  --terminal-bg: #050913;
+  --terminal-text: #d8e9ff;
+  --terminal-prompt-color: #00a8ff;
   --grid-color: rgba(0, 166, 255, 0.07);
   
   --gray-rgb: 0, 0, 0;
@@ -420,12 +421,13 @@
 
 .markdownContent code {
   font-family: var(--font-geist-mono);
-  font-size: 0.85rem;
-  color: var(--terminal-green);
+  font-size: 0.75rem; /* Reduced font size */
+  color: var(--terminal-text);
 }
 
 .markdownContent pre code {
-  color: var(--terminal-green);
+  color: var(--terminal-text);
+  font-size: 0.75rem; /* Reduced font size */
 }
 
 .inputContainer {
