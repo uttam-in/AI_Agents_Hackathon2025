@@ -59,7 +59,6 @@ active_tools = {}  # Track active tools
 # Function to create a plugin wrapper that tracks tool usage
 def create_tracking_wrapper(plugin, plugin_name, sid):
     """Create a wrapper around plugin functions to track when they're called"""
-    print(f"Creating tracking wrapper for plugin: {plugin_name}")
     global current_sid
     current_sid = sid
     
@@ -76,7 +75,6 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
             def make_wrapper(method_name, orig_method):
                 async def emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
                     """Helper function to emit tool events directly"""
-                    print(f"Emitting {event_type} event for tool: {tool_name}, status: {status}")
                     try:
                         if event_type == 'tool_usage':
                             # Legacy format
@@ -102,13 +100,21 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 event_data['duration'] = duration
                                 
                             await sio.emit('tool_execution', event_data, room=current_sid)
-                            print(f"Tool {status} event emitted for {tool_name}")
+                            # Print tool usage when emitted
+                            print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status}")
                     except Exception as e:
                         print(f"Error emitting {event_type} event: {e}")
                 
                 def wrapper(*args, **kwargs):
                     # Get the friendly tool name
                     tool_name = get_friendly_tool_name(plugin_name, method_name)
+                    
+                    # Highly visible output for tool selection
+                    if tool_name:
+                        print(f"\n{'='*50}")
+                        print(f"🔧 TOOL SELECTED BY LLM: '{tool_name}'")
+                        print(f"📝 PLUGIN: {plugin_name} → FUNCTION: {method_name}")
+                        print(f"{'='*50}\n")
                     
                     # Capture parameters for logging
                     parameters_dict = {}
@@ -135,6 +141,13 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                             parameters_dict[k] = str(v)
                         else:
                             parameters_dict[k] = v
+                    
+                    # Print parameters
+                    if parameters_dict and tool_name:
+                        print(f"📝 Parameters:")
+                        for param_name, param_value in parameters_dict.items():
+                            print(f"   - {param_name}: {param_value}")
+                        print()
                     
                     # Convert parameters to JSON string for logging
                     parameters_json = json.dumps(parameters_dict, default=str)
@@ -170,6 +183,11 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 duration = time.time() - active_tools[tool_id]['start_time']
                                 
                             print(f"Tool completed successfully: {tool_name}")
+                            # Print result summary
+                            if isinstance(result, str):
+                                result_preview = result[:150] + "..." if len(result) > 150 else result
+                                print(f"📋 Result preview: {result_preview}\n")
+                                
                             # Use direct emitting with asyncio.create_task
                             asyncio.create_task(emit_tool_event('tool_usage', tool_name, 'completed'))
                             asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'completed', 
@@ -186,7 +204,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 active_tools[tool_id]['error'] = str(e)
                                 duration = time.time() - active_tools[tool_id]['start_time']
                             
-                            print(f"Tool failed: {tool_name} with error: {str(e)}")
+                            print(f"❌ Tool failed: {tool_name} with error: {str(e)}")
                             # Use direct emitting with asyncio.create_task
                             asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'failed', 
                                                                tool_id=tool_id, error=str(e), duration=duration))
