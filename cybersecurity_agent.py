@@ -331,14 +331,7 @@ def get_friendly_tool_name(plugin_name, function_name):
 
 
 
-    # thread: ChatHistoryAgentThread = None
-    # cl.user_session.set("agent", agent)
-    # cl.user_session.set("thread", thread)
-    
-    # # Store references globally for Socket.IO
-    # global global_agent, global_thread
-    # global_agent = agent
-    # global_thread = thread
+
 
 
 @cl.on_message
@@ -493,6 +486,15 @@ You are an expert guide for anyone learning about offensive and defensive cybers
     else:
         # Make sure we're using the current session for tool tracking notifications
         current_sid = sid
+        
+    thread: ChatHistoryAgentThread = None
+    cl.user_session.set("agent", global_agent)
+    cl.user_session.set("thread", thread)
+    
+    # Store references globally for Socket.IO
+    global global_agent, global_thread
+    global_agent = global_agent
+    global_thread = thread        
     
     response_text = ""
     buffer = ""
