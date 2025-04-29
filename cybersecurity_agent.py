@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import socketio
 import sys
+import traceback
 
 from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
 from terminal_plugin.src.terminal_tools import TerminalTools
@@ -72,16 +73,25 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
             
             # Create a wrapper function
             def make_wrapper(method_name, orig_method):
-                async def emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
-                    """Helper function to emit tool events directly"""
+                # Define a synchronous version of the emit function that uses the event loop
+                def sync_emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
+                    """Synchronous helper function to emit tool events directly"""
                     try:
+                        loop = asyncio.get_event_loop()
                         if event_type == 'tool_usage':
                             # Legacy format
-                            await sio.emit('tool_usage', {
+                            coroutine = sio.emit('tool_usage', {
                                 'tool': tool_name,
                                 'status': status,
                                 'timestamp': time.time()
                             }, room=current_sid)
+                            if loop.is_running():
+                                # If loop is running, create a task
+                                future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+                                future.result(timeout=5)  # Wait for result with timeout
+                            else:
+                                # If loop is not running, run the coroutine
+                                loop.run_until_complete(coroutine)
                         else:  # tool_execution
                             # Enhanced format
                             event_data = {
@@ -100,11 +110,20 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                             if duration:
                                 event_data['duration'] = duration
                                 
-                            await sio.emit('tool_execution', event_data, room=current_sid)
+                            coroutine = sio.emit('tool_execution', event_data, room=current_sid)
+                            if loop.is_running():
+                                # If loop is running, create a task
+                                future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+                                future.result(timeout=5)  # Wait for result with timeout
+                            else:
+                                # If loop is not running, run the coroutine
+                                loop.run_until_complete(coroutine)
+                            
                             # Print tool usage when emitted
                             print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status} - Plugin: {plugin_name}")
                     except Exception as e:
                         print(f"Error emitting {event_type} event: {e}")
+                        traceback.print_exc()  # Print the full traceback to help with debugging
                 
                 def wrapper(*args, **kwargs):
                     # Get the friendly tool name
@@ -166,10 +185,10 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                     # Log and send notification that tool is starting
                     if tool_name:
                         print(f"Tool started: {tool_name} with parameters: {parameters_json}")
-                        # Use direct emitting with asyncio.create_task
-                        asyncio.create_task(emit_tool_event('tool_usage', tool_name, 'started'))
-                        asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'started', 
-                                                           tool_id=tool_id, parameters=parameters_json))
+                        # Use our synchronous function instead of create_task
+                        sync_emit_tool_event('tool_usage', tool_name, 'started')
+                        sync_emit_tool_event('tool_execution', tool_name, 'started', 
+                                           tool_id=tool_id, parameters=parameters_json)
                     
                     try:
                         # Call the original method
@@ -189,10 +208,10 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 result_preview = result[:150] + "..." if len(result) > 150 else result
                                 print(f"📋 Result preview: {result_preview}\n")
                                 
-                            # Use direct emitting with asyncio.create_task
-                            asyncio.create_task(emit_tool_event('tool_usage', tool_name, 'completed'))
-                            asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'completed', 
-                                                               tool_id=tool_id, duration=duration))
+                            # Use our synchronous function instead of asyncio.create_task
+                            sync_emit_tool_event('tool_usage', tool_name, 'completed')
+                            sync_emit_tool_event('tool_execution', tool_name, 'completed', 
+                                               tool_id=tool_id, duration=duration)
                                 
                         return result
                     except Exception as e:
@@ -206,9 +225,9 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 duration = time.time() - active_tools[tool_id]['start_time']
                             
                             print(f"❌ Tool failed: {tool_name} with error: {str(e)}")
-                            # Use direct emitting with asyncio.create_task
-                            asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'failed', 
-                                                               tool_id=tool_id, error=str(e), duration=duration))
+                            # Use our synchronous function instead of asyncio.create_task
+                            sync_emit_tool_event('tool_execution', tool_name, 'failed', 
+                                               tool_id=tool_id, error=str(e), duration=duration)
                         
                         # Re-raise the original exception
                         raise
