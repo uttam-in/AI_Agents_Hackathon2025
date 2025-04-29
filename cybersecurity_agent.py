@@ -214,17 +214,36 @@ async def chat_message(sid, data):
         )
     
     response_text = ""
+    buffer = ""
+    sentence_buffer = ""
     
     try:
+        # Initial message to confirm processing
+        await sio.emit('response_chunk', {'chunk': 'Processing your request...'}, room=sid)
+        
         # Invoke the agent with the user's message
         async for response in global_agent.invoke_stream(messages=message, thread=global_thread):
             if response.content:
-                response_chunk = str(response.content)
-                response_text += response_chunk
-                # Stream the response chunks to the client
-                await sio.emit('response_chunk', {'chunk': response_chunk}, room=sid)
+                chunk = str(response.content)
+                response_text += chunk
+                buffer += chunk
+                sentence_buffer += chunk
+                
+                # Send chunks in larger, meaningful segments
+                # Only send when we have significant content or complete sentences
+                if len(buffer) >= 20 or '.' in buffer or '!' in buffer or '?' in buffer or '\n' in buffer:
+                    # Replace the initial "Processing" message with actual content on first chunk
+                    if sentence_buffer == buffer:
+                        await sio.emit('new_response', {'message': buffer}, room=sid)
+                    else:
+                        await sio.emit('append_to_response', {'chunk': buffer}, room=sid)
+                    buffer = ""
             
             global_thread = response.thread
+        
+        # Send any remaining text in the buffer
+        if buffer:
+            await sio.emit('append_to_response', {'chunk': buffer}, room=sid)
         
         # Send the complete response when finished
         await sio.emit('response_complete', {'response': response_text}, room=sid)

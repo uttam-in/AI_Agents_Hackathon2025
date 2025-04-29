@@ -4,6 +4,10 @@ import styles from "@/styles/Home.module.css";
 import { ChainlitContext } from "@chainlit/react-client";
 import { useContext, useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,6 +24,7 @@ interface Message {
   id: string;
   type: 'user' | 'assistant';
   content: string;
+  timestamp?: number;  // Adding timestamp to sort messages
 }
 
 export default function Home() {
@@ -52,10 +57,52 @@ export default function Home() {
       setConnected(false);
     });
 
+    // Event for starting a new response message
+    socketInstance.on("new_response", (data) => {
+      console.log("New response:", data);
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: data.message
+      };
+      setCurrentAssistantMessage(newMessage);
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+    });
+
+    // Event for appending to an existing response message
+    socketInstance.on("append_to_response", (data) => {
+      console.log("Append to response:", data);
+      setCurrentAssistantMessage(prevMessage => {
+        if (prevMessage) {
+          const updatedMessage = {
+            ...prevMessage,
+            content: prevMessage.content + data.chunk
+          };
+          
+          // Update the message in the messages array
+          setMessages(prevMessages => 
+            prevMessages.map(message => 
+              message.id === prevMessage.id ? updatedMessage : message
+            )
+          );
+          
+          return updatedMessage;
+        }
+        return prevMessage;
+      });
+    });
+
+    // Legacy event handler for backwards compatibility
     socketInstance.on("response_chunk", (data) => {
-      console.log("Received chunk:", data);
+      console.log("Received legacy chunk:", data);
+      // Only handle this if we don't have a current message or it's the first chunk
       if (currentAssistantMessage === null) {
-        // Create a new assistant message if it doesn't exist yet
+        if (data.chunk === 'Processing your request...') {
+          // Don't create a message for the processing notification
+          return;
+        }
+        
+        // Create a new assistant message
         const newMessage: Message = {
           id: Date.now().toString(),
           type: 'assistant',
@@ -63,20 +110,22 @@ export default function Home() {
         };
         setCurrentAssistantMessage(newMessage);
         setMessages(prevMessages => [...prevMessages, newMessage]);
-      } else {
-        // Update the existing message with the new chunk
+      } else if (!data.chunk.includes('Processing your request...')) {
+        // Update existing message but only for non-processing chunks
         setCurrentAssistantMessage(prevMessage => {
           if (prevMessage) {
             const updatedMessage = {
               ...prevMessage,
               content: prevMessage.content + data.chunk
             };
+            
             // Update the message in the messages array
             setMessages(prevMessages => 
               prevMessages.map(message => 
                 message.id === prevMessage.id ? updatedMessage : message
               )
             );
+            
             return updatedMessage;
           }
           return prevMessage;
@@ -140,6 +189,58 @@ export default function Home() {
     }
   };
 
+  // Format code blocks in the message
+  const formatMessage = (content: string) => {
+    // Detect if content has code blocks
+    const hasCodeBlock = content.includes('```');
+    
+    if (hasCodeBlock) {
+      return content;
+    }
+    
+    // For regular text, detect and format URLs
+    return content.replace(
+      /(https?:\/\/[^\s]+)/g, 
+      url => `[${url}](${url})`
+    );
+  };
+
+  // Add a state for consolidated messages
+  const [consolidatedMessages, setConsolidatedMessages] = useState<Message[]>([]);
+  
+  // Consolidate assistant messages into single messages
+  useEffect(() => {
+    if (messages.length === 0) {
+      setConsolidatedMessages([]);
+      return;
+    }
+    
+    const newConsolidatedMessages: Message[] = [];
+    let currentGroup: Message | null = null;
+    
+    messages.forEach(message => {
+      if (message.type === 'user') {
+        // User messages are always individual
+        newConsolidatedMessages.push({ ...message });
+        currentGroup = null;
+      } else {
+        // For assistant messages, try to consolidate
+        if (!currentGroup) {
+          // Start a new group
+          currentGroup = { ...message, timestamp: Date.now() };
+          newConsolidatedMessages.push(currentGroup);
+        } else {
+          // Append to the current group if it's from the assistant
+          currentGroup.content += ' ' + message.content;
+          // Update the reference in the consolidated messages array
+          newConsolidatedMessages[newConsolidatedMessages.length - 1] = { ...currentGroup };
+        }
+      }
+    });
+    
+    setConsolidatedMessages(newConsolidatedMessages);
+  }, [messages]);
+
   return (
     <>
       <Head>
@@ -163,7 +264,7 @@ export default function Home() {
           
           <div className={styles.chatContainer}>
             <div className={styles.messagesList}>
-              {messages.map((message) => (
+              {consolidatedMessages.map((message) => (
                 <div 
                   key={message.id} 
                   className={`${styles.message} ${
@@ -174,11 +275,45 @@ export default function Home() {
                     {message.type === 'user' ? 'You' : 'CyberSec Agent'}
                   </div>
                   <div className={styles.messageContent}>
-                    {message.content}
+                    {message.type === 'user' ? (
+                      message.content
+                    ) : (
+                      <div className={styles.markdownContent}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                          components={{
+                            // Add custom components to style markdown elements
+                            p: ({node, ...props}) => <p className={styles.paragraph} {...props} />,
+                            pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
+                            code: ({node, inline, ...props}) => 
+                              inline 
+                                ? <code className={styles.inlineCode} {...props} />
+                                : <code className={styles.code} {...props} />,
+                            h1: ({node, ...props}) => <h1 className={styles.heading} {...props} />,
+                            h2: ({node, ...props}) => <h2 className={styles.heading} {...props} />,
+                            h3: ({node, ...props}) => <h3 className={styles.heading} {...props} />,
+                            ul: ({node, ...props}) => <ul className={styles.list} {...props} />,
+                            ol: ({node, ...props}) => <ol className={styles.list} {...props} />,
+                            li: ({node, ...props}) => <li className={styles.listItem} {...props} />
+                          }}
+                        >
+                          {formatMessage(message.content)}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
-              {loading && !currentAssistantMessage && <div className={styles.loading}>Agent is thinking...</div>}
+              {loading && !currentAssistantMessage && (
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingDots}>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
             <div className={styles.inputContainer}>
