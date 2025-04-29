@@ -1265,3 +1265,23 @@
   background-color: var(--accent-color);
   border-radius: 2px;
 }
+
+.pluginBadge {
+  font-size: 0.7rem;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background-color: rgba(0, 242, 255, 0.15);
+  border: 1px solid rgba(0, 242, 255, 0.4);
+  color: #00f2ff;
+  border-radius: 4px;
+  display: inline-block;
+  vertical-align: middle;
+  box-shadow: 0 0 4px rgba(0, 242, 255, 0.3);
+  animation: pulseBadge 2s infinite;
+}
+
+@keyframes pulseBadge {
+  0% { box-shadow: 0 0 4px rgba(0, 242, 255, 0.3); }
+  50% { box-shadow: 0 0 8px rgba(0, 242, 255, 0.6); }
+  100% { box-shadow: 0 0 4px rgba(0, 242, 255, 0.3); }
+}

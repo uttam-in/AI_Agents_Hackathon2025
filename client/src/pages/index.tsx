@@ -113,6 +113,8 @@ interface ToolExecution {
   endTime?: number;
   status: 'started' | 'completed' | 'failed';
   parameters?: string;
+  isPlugin?: boolean;
+  pluginName?: string;
 }
 
 export default function Home() {
@@ -287,7 +289,7 @@ export default function Home() {
     // Listen for tool execution events
     socketInstance.on("tool_execution", (data) => {
       console.log("Tool execution event:", data);
-      const { tool, status, parameters } = data;
+      const { tool, status, parameters, isPlugin, pluginName } = data;
       
       if (status === 'started') {
         // Add new tool execution to the log
@@ -296,7 +298,9 @@ export default function Home() {
           name: tool,
           startTime: Date.now(),
           status: 'started',
-          parameters: parameters
+          parameters: parameters,
+          isPlugin: isPlugin || false,
+          pluginName: pluginName
         };
         setToolExecutions(prev => [...prev, newToolExecution]);
         
@@ -307,7 +311,7 @@ export default function Home() {
         setToolExecutions(prev => 
           prev.map(execution => 
             execution.name === tool && !execution.endTime
-              ? { ...execution, endTime: Date.now(), status }
+              ? { ...execution, endTime: Date.now(), status, isPlugin: isPlugin || execution.isPlugin, pluginName: pluginName || execution.pluginName }
               : execution
           )
         );
@@ -809,6 +813,12 @@ export default function Home() {
                                execution.status === 'failed' ? '✗' : '⚙️'}
                             </div>
                             {execution.name}
+                            {/* Show plugin badge if it's a plugin */}
+                            {execution.isPlugin && (
+                              <span className={styles.pluginBadge}>
+                                {execution.pluginName || 'Plugin'}
+                              </span>
+                            )}
                           </div>
                           <div className={styles.toolTimestamp}>
                             <span>{new Date(execution.startTime).toLocaleTimeString()}</span>
@@ -1125,6 +1135,12 @@ export default function Home() {
                                  execution.status === 'failed' ? '✗' : '⚙️'}
                               </div>
                               {execution.name}
+                              {/* Show plugin badge if it's a plugin */}
+                              {execution.isPlugin && (
+                                <span className={styles.pluginBadge}>
+                                  {execution.pluginName || 'Plugin'}
+                                </span>
+                              )}
                             </div>
                             <div className={styles.toolTimestamp}>
                               <span>{new Date(execution.startTime).toLocaleTimeString()}</span>
