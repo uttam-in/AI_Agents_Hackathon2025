@@ -147,7 +147,7 @@ export default function Home() {
 
   // Connect to the Socket.IO server
   useEffect(() => {
-    const socketInstance = io("http://localhost:8000", {
+    const socketInstance = io("http://192.168.254.179:8000", {
       transports: ["websocket"],
       autoConnect: true,
     });
