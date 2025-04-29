@@ -40,6 +40,55 @@ const NetworkGraph = () => (
   </div>
 );
 
+// Anime-style Avatar components for the chat
+const UserAvatar = () => (
+  <div className={styles.avatar}>
+    <div className={styles.userAvatarImage}>
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+        <circle cx="50" cy="35" r="25" fill="#4a89dc" />
+        <circle cx="40" cy="30" r="3" fill="white" />
+        <circle cx="60" cy="30" r="3" fill="white" />
+        <path d="M 40 45 Q 50 55 60 45" stroke="white" strokeWidth="2" fill="none" />
+        <path d="M 25 30 Q 20 15 30 10" stroke="#4a89dc" strokeWidth="4" fill="none" />
+        <path d="M 75 30 Q 80 15 70 10" stroke="#4a89dc" strokeWidth="4" fill="none" />
+        <path d="M 30 85 Q 50 95 70 85 Q 80 70 70 60 L 30 60 Q 20 70 30 85" fill="#4a89dc" />
+      </svg>
+    </div>
+    <div className={styles.avatarGlow}></div>
+  </div>
+);
+
+const AIAvatar = () => (
+  <div className={styles.avatar}>
+    <div className={styles.aiAvatarImage}>
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+        <circle cx="50" cy="35" r="25" fill="#00f2ff" />
+        <circle cx="40" cy="30" r="3" fill="white" />
+        <circle cx="60" cy="30" r="3" fill="white" />
+        <path d="M 35 40 Q 50 45 65 40" stroke="white" strokeWidth="2" fill="none" />
+        <path d="M 30 20 L 20 10" stroke="#00f2ff" strokeWidth="3" fill="none" />
+        <path d="M 70 20 L 80 10" stroke="#00f2ff" strokeWidth="3" fill="none" />
+        <path d="M 25 70 Q 50 85 75 70 Q 85 55 75 45 L 25 45 Q 15 55 25 70" fill="#00f2ff" />
+        <circle cx="35" cy="30" r="8" fill="#00f2ff" stroke="white" strokeWidth="2" />
+        <circle cx="65" cy="30" r="8" fill="#00f2ff" stroke="white" strokeWidth="2" />
+        <circle cx="35" cy="30" r="2" fill="white" />
+        <circle cx="65" cy="30" r="2" fill="white" />
+      </svg>
+    </div>
+    <div className={styles.avatarGlow}></div>
+  </div>
+);
+
+// Formatter for displaying different text options
+const TextFormatOption = ({ text, active, onClick }: { text: string, active: boolean, onClick: () => void }) => (
+  <button 
+    className={`${styles.formatOption} ${active ? styles.activeFormatOption : ''}`} 
+    onClick={onClick}
+  >
+    {text}
+  </button>
+);
+
 // Radar animation that only shows when loading
 const RadarAnimation = ({ loading }: { loading: boolean }) => (
   <div className={`${styles.radarContainer} ${loading ? styles.radarVisible : styles.radarHidden}`}>
@@ -92,6 +141,16 @@ export default function Home() {
     content: string;
     timestamp: number;
   } | null>(null);
+
+  // Text formatting options state
+  const [textFormat, setTextFormat] = useState<'default' | 'code' | 'matrix'>('default');
+
+  // Format options for the AI response
+  const formatOptions = [
+    { id: 'default', name: 'Default' },
+    { id: 'code', name: 'Code Theme' },
+    { id: 'matrix', name: 'Matrix' },
+  ];
 
   // Connect to the Socket.IO server
   useEffect(() => {
@@ -503,38 +562,54 @@ export default function Home() {
                       message.type === 'user' ? styles.userMessage : styles.assistantMessage
                     }`}
                   >
-                    <div className={styles.messageName}>
-                      {message.type === 'user' ? 'User' : 'CyberSec AI'}
+                    <div className={styles.messageName} data-name={message.type === 'user' ? 'User' : 'CyberSec AI'}>
+                      {message.type === 'user' ? <UserAvatar /> : <AIAvatar />}
                     </div>
-                    <div className={styles.messageContent}>
+                    <div className={`${styles.messageContent} ${
+                      message.type === 'assistant' && textFormat === 'code' ? styles.codeTheme : 
+                      message.type === 'assistant' && textFormat === 'matrix' ? styles.matrixTheme : ''
+                    }`}>
                       {message.type === 'user' ? (
                         message.content
                       ) : (
-                        <div className={styles.markdownContent}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeHighlight, rehypeRaw]}
-                            components={{
-                              p: ({node, ...props}) => <p className={styles.paragraph} {...props} />,
-                              pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
-                              code: ({node, inline, ...props}) => 
-                                inline 
-                                  ? <code className={styles.inlineCode} {...props} />
-                                  : <code className={styles.code} {...props} />,
-                              h1: ({node, ...props}) => <h1 className={styles.heading} {...props} />,
-                              h2: ({node, ...props}) => <h2 className={styles.heading} {...props} />,
-                              h3: ({node, ...props}) => <h3 className={styles.heading} {...props} />,
-                              ul: ({node, ...props}) => <ul className={styles.list} {...props} />,
-                              ol: ({node, ...props}) => <ol className={styles.list} {...props} />,
-                              li: ({node, ...props}) => <li className={styles.listItem} {...props} />
-                            }}
-                          >
-                            {formatMessage(message.content)}
-                          </ReactMarkdown>
-                          {message.type === 'assistant' && loading && message.id === currentAssistantMessage?.id && (
-                            <span className={styles.cursorBlink}></span>
-                          )}
-                        </div>
+                        <>
+                          {/* Text format options for AI responses */}
+                          <div className={styles.formatOptionsContainer}>
+                            {formatOptions.map(option => (
+                              <TextFormatOption 
+                                key={option.id}
+                                text={option.name} 
+                                active={textFormat === option.id} 
+                                onClick={() => setTextFormat(option.id as 'default' | 'code' | 'matrix')}
+                              />
+                            ))}
+                          </div>
+                          <div className={styles.markdownContent}>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                              components={{
+                                p: ({node, ...props}) => <p className={styles.paragraph} {...props} />,
+                                pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
+                                code: ({node, inline, ...props}) => 
+                                  inline 
+                                    ? <code className={styles.inlineCode} {...props} />
+                                    : <code className={styles.code} {...props} />,
+                                h1: ({node, ...props}) => <h1 className={styles.heading} {...props} />,
+                                h2: ({node, ...props}) => <h2 className={styles.heading} {...props} />,
+                                h3: ({node, ...props}) => <h3 className={styles.heading} {...props} />,
+                                ul: ({node, ...props}) => <ul className={styles.list} {...props} />,
+                                ol: ({node, ...props}) => <ol className={styles.list} {...props} />,
+                                li: ({node, ...props}) => <li className={styles.listItem} {...props} />
+                              }}
+                            >
+                              {formatMessage(message.content)}
+                            </ReactMarkdown>
+                            {message.type === 'assistant' && loading && message.id === currentAssistantMessage?.id && (
+                              <span className={styles.cursorBlink}></span>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
