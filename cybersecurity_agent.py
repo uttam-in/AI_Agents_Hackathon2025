@@ -89,7 +89,8 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 'status': status,
                                 'timestamp': time.time(),
                                 'tool_id': tool_id,
-                                'isPlugin': True  # Mark that this is a plugin execution
+                                'isPlugin': True,  # Mark that this is a plugin execution
+                                'pluginName': plugin_name  # Include the original plugin name
                             }
                             
                             if parameters:
@@ -101,7 +102,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 
                             await sio.emit('tool_execution', event_data, room=current_sid)
                             # Print tool usage when emitted
-                            print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status}")
+                            print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status} - Plugin: {plugin_name}")
                     except Exception as e:
                         print(f"Error emitting {event_type} event: {e}")
                 
