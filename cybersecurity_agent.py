@@ -464,16 +464,39 @@ async def chat_message(sid, data):
         kernel.add_service(ai_service)
         
         # Add plugins (simplified for Socket.IO access)
+        # Import the plugins
         kernel.add_plugin(NmapNetworkingToolsPlugin(), plugin_name="NetworkTools")
         kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
+        
+        # Add Hydra plugin
         kernel.add_plugin(HydraPlugin(), plugin_name="HydraTools")
-        kernel.add_plugin(SQLMapToolsPlugin(), plugin_name="SQLMapTools")
+        
+        # Configure Metasploit - now using local msfconsole installation
         kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
-        kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
-        kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
+        
+        # Add Linux Tools plugin
+        kernel.add_plugin(LinuxToolsPlugin(), plugin_name="LinuxTools")
+        
+        # Add SQLMap tools plugin
+        kernel.add_plugin(SQLMapToolsPlugin(), plugin_name="SQLMapTools")
+        
+        # Add Burp Suite tools plugin
         kernel.add_plugin(BurpSuiteToolsPlugin(), plugin_name="BurpSuiteTools")
+        
+        # Add Netdiscover tools plugin
         kernel.add_plugin(NetdiscoverToolsPlugin(), plugin_name="NetdiscoverTools")
+        
+        # Add NBTScan tools plugin
         kernel.add_plugin(NBTScanToolsPlugin(), plugin_name="NBTScanTools")
+        
+        # Add SearchSploit tools plugin
+        kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
+        
+        # Add Python script plugin
+        kernel.add_plugin(PythonScriptPlugin(), plugin_name="PythonScriptTools")
+        
+        # Add Terminal plugin
+        kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
         
         global_agent = ChatCompletionAgent(
             kernel=kernel,
