@@ -73,6 +73,37 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
             
             # Create a wrapper function
             def make_wrapper(method_name, orig_method):
+                async def emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
+                    """Helper function to emit tool events directly"""
+                    try:
+                        if event_type == 'tool_usage':
+                            # Legacy format
+                            await sio.emit('tool_usage', {
+                                'tool': tool_name,
+                                'status': status,
+                                'timestamp': time.time()
+                            }, room=current_sid)
+                        else:  # tool_execution
+                            # Enhanced format
+                            event_data = {
+                                'tool': tool_name,
+                                'status': status,
+                                'timestamp': time.time(),
+                                'tool_id': tool_id
+                            }
+                            
+                            if parameters:
+                                event_data['parameters'] = parameters
+                            if error:
+                                event_data['error'] = error
+                            if duration:
+                                event_data['duration'] = duration
+                                
+                            await sio.emit('tool_execution', event_data, room=current_sid)
+                            print(f"Tool {status} event emitted for {tool_name}")
+                    except Exception as e:
+                        print(f"Error emitting {event_type} event: {e}")
+                
                 def wrapper(*args, **kwargs):
                     # Get the friendly tool name
                     tool_name = get_friendly_tool_name(plugin_name, method_name)
@@ -119,32 +150,10 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                     # Log and send notification that tool is starting
                     if tool_name:
                         print(f"Tool started: {tool_name} with parameters: {parameters_json}")
-                        # Direct socket emit instead of trying to get event loop
-                        try:
-                            # Send legacy format
-                            asyncio.run_coroutine_threadsafe(
-                                sio.emit('tool_usage', {
-                                    'tool': tool_name,
-                                    'status': 'started',
-                                    'timestamp': time.time()
-                                }, room=current_sid),
-                                asyncio.get_event_loop()
-                            )
-                            
-                            # Send enhanced tool execution event
-                            asyncio.run_coroutine_threadsafe(
-                                sio.emit('tool_execution', {
-                                    'tool': tool_name,
-                                    'status': 'started',
-                                    'timestamp': time.time(),
-                                    'parameters': parameters_json,
-                                    'tool_id': tool_id
-                                }, room=current_sid),
-                                asyncio.get_event_loop()
-                            )
-                            print(f"Successfully emitted tool_execution event for {tool_name}")
-                        except Exception as e:
-                            print(f"Error emitting tool start: {e}")
+                        # Use direct emitting with asyncio.create_task
+                        asyncio.create_task(emit_tool_event('tool_usage', tool_name, 'started'))
+                        asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'started', 
+                                                           tool_id=tool_id, parameters=parameters_json))
                     
                     try:
                         # Call the original method
@@ -156,34 +165,13 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                             if tool_id in active_tools:
                                 active_tools[tool_id]['end_time'] = time.time()
                                 active_tools[tool_id]['status'] = 'completed'
+                                duration = time.time() - active_tools[tool_id]['start_time']
                                 
                             print(f"Tool completed successfully: {tool_name}")
-                            # Direct socket emit for completion
-                            try:
-                                # Send legacy format
-                                asyncio.run_coroutine_threadsafe(
-                                    sio.emit('tool_usage', {
-                                        'tool': tool_name,
-                                        'status': 'completed',
-                                        'timestamp': time.time()
-                                    }, room=current_sid),
-                                    asyncio.get_event_loop()
-                                )
-                                
-                                # Send enhanced tool execution completion event
-                                asyncio.run_coroutine_threadsafe(
-                                    sio.emit('tool_execution', {
-                                        'tool': tool_name,
-                                        'status': 'completed',
-                                        'timestamp': time.time(),
-                                        'tool_id': tool_id,
-                                        'duration': time.time() - active_tools[tool_id]['start_time'] if tool_id in active_tools else None
-                                    }, room=current_sid),
-                                    asyncio.get_event_loop()
-                                )
-                                print(f"Successfully emitted tool_completion event for {tool_name}")
-                            except Exception as e:
-                                print(f"Error emitting tool completion: {e}")
+                            # Use direct emitting with asyncio.create_task
+                            asyncio.create_task(emit_tool_event('tool_usage', tool_name, 'completed'))
+                            asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'completed', 
+                                                               tool_id=tool_id, duration=duration))
                                 
                         return result
                     except Exception as e:
@@ -194,25 +182,12 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 active_tools[tool_id]['end_time'] = time.time()
                                 active_tools[tool_id]['status'] = 'failed'
                                 active_tools[tool_id]['error'] = str(e)
+                                duration = time.time() - active_tools[tool_id]['start_time']
                             
                             print(f"Tool failed: {tool_name} with error: {str(e)}")
-                            # Direct socket emit for failure
-                            try:
-                                # Send enhanced tool execution failure event
-                                asyncio.run_coroutine_threadsafe(
-                                    sio.emit('tool_execution', {
-                                        'tool': tool_name,
-                                        'status': 'failed',
-                                        'timestamp': time.time(),
-                                        'tool_id': tool_id,
-                                        'error': str(e),
-                                        'duration': time.time() - active_tools[tool_id]['start_time'] if tool_id in active_tools else None
-                                    }, room=current_sid),
-                                    asyncio.get_event_loop()
-                                )
-                                print(f"Successfully emitted tool_failure event for {tool_name}")
-                            except Exception as emit_error:
-                                print(f"Error emitting tool failure: {emit_error}")
+                            # Use direct emitting with asyncio.create_task
+                            asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'failed', 
+                                                               tool_id=tool_id, error=str(e), duration=duration))
                         
                         # Re-raise the original exception
                         raise
