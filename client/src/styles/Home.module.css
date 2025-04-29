@@ -15,6 +15,7 @@
   --card-bg-light: #ffffff;
   --terminal-green: #0f0;
   --terminal-bg: #000;
+  --terminal-prompt-color: #ff9800;
   
   --gray-rgb: 0, 0, 0;
   --gray-alpha-200: rgba(var(--gray-rgb), 0.08);
@@ -393,17 +394,284 @@
   border-radius: 3px;
 }
 
-/* Terminal-style animations */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+/* Tab navigation */
+.tabsContainer {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--card-bg-dark);
 }
 
-.cursorBlink {
-  display: inline-block;
-  width: 8px;
-  height: 15px;
+.tabButton {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  font-family: var(--font-geist-sans);
+}
+
+.tabButton:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.activeTab {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.activeTab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
   background-color: var(--primary-color);
-  margin-left: 4px;
-  animation: blink 1s step-end infinite;
+}
+
+/* Terminal header */
+.terminalHeader {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--card-bg-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminalHeader h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--primary-color);
+  font-family: var(--font-geist-mono);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminalHeader h2::before {
+  content: ">";
+  color: var(--terminal-prompt-color);
+}
+
+.terminalControls {
+  display: flex;
+  gap: 8px;
+}
+
+.clearButton {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-light);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clearButton:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary-color);
+}
+
+/* Terminal content */
+.terminalContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background-color: var(--terminal-bg);
+  font-family: var(--font-geist-mono);
+  font-size: 0.9rem;
+  color: var(--text-light);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.terminalItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.terminalCommand {
+  color: var(--text-light);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.4;
+  width: 100%;
+}
+
+.terminalPrompt {
+  color: var(--terminal-prompt-color);
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.terminalOutput {
+  margin-left: 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--terminal-green);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  width: 100%;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding-left: 8px;
+}
+
+.terminalOutput pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--font-geist-mono);
+}
+
+.terminalProcessing {
+  margin-left: 8px;
+  padding: 4px 0;
+}
+
+.noTerminalCommands {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.noTerminalCommands p {
+  margin-bottom: 12px;
+  color: var(--text-light);
+  opacity: 0.7;
+}
+
+/* Terminal input */
+.terminalInputContainer {
+  display: flex;
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--terminal-bg);
+  align-items: center;
+}
+
+.terminalInput {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  background-color: transparent;
+  color: var(--text-light);
+  font-family: var(--font-geist-mono);
+  font-size: 0.9rem;
+  margin-left: 8px;
+}
+
+.terminalInput:focus {
+  outline: none;
+}
+
+.runButton {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0 16px;
+  height: 34px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: var(--font-geist-sans);
+  font-size: 0.85rem;
+}
+
+.runButton:hover {
+  background-color: var(--secondary-color);
+}
+
+/* Animation for terminal command processing */
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.loadingDots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loadingDots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loadingDots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* React Terminal UI Styles */
+.reactTerminalContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: var(--terminal-bg);
+}
+
+.reactTerminalContainer > div {
+  height: 100% !important;
+  width: 100% !important;
+  border-radius: 0;
+  font-family: var(--font-geist-mono);
+}
+
+.processingIndicator {
+  color: var(--accent-color);
+  font-style: italic;
+}
+
+/* Override some of the Terminal UI default styles */
+:global(.react-terminal-wrapper) {
+  background-color: var(--terminal-bg) !important;
+  overflow: auto;
+}
+
+:global(.react-terminal) {
+  height: 100%;
+  padding: 16px !important;
+  background-color: var(--terminal-bg) !important;
+  overflow: auto;
+}
+
+:global(.react-terminal-line) {
+  line-height: 1.5;
+  margin-bottom: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+:global(.react-terminal-line-input) {
+  color: var(--terminal-prompt-color) !important;
+  font-weight: bold;
+}
+
+:global(.react-terminal-line-input::before) {
+  content: "$ ";
+  color: var(--terminal-prompt-color);
+}
+
+:global(.react-terminal-wrapper pre) {
+  margin: 0;
+  font-family: var(--font-geist-mono);
+}
+
+:global(.react-terminal-wrapper .react-terminal) {
+  min-height: 100%;
 }

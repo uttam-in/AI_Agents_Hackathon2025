@@ -2,12 +2,13 @@ import Head from "next/head";
 import { Geist, Geist_Mono } from "next/font/google";
 import styles from "@/styles/Home.module.css";
 import { ChainlitContext } from "@chainlit/react-client";
-import { useContext, useState, useEffect, useRef } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import Terminal, { ColorMode, TerminalOutput, TerminalInput } from 'react-terminal-ui';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,16 @@ interface Message {
   timestamp?: number;  // Adding timestamp to sort messages
 }
 
+// Terminal command interface
+interface TerminalCommand {
+  id: string;
+  command: string;
+  output: string;
+  timestamp: number;
+  isComplete: boolean; // Whether the command execution is complete
+  workingDir?: string; // Current working directory for the command
+}
+
 export default function Home() {
   // Get the client from the context (already initialized in _app.tsx)
   const client = useContext(ChainlitContext);
@@ -36,6 +47,13 @@ export default function Home() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+  
+  // Terminal related states
+  const [terminalCommands, setTerminalCommands] = useState<TerminalCommand[]>([]);
+  const [terminalInput, setTerminalInput] = useState("");
+  const [activeTab, setActiveTab] = useState<'analysis' | 'terminal'>('analysis');
+  const [terminalProcessing, setTerminalProcessing] = useState(false);
   
   // Current assistant message being streamed
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<Message | null>(null);
@@ -181,6 +199,11 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Scroll to bottom when terminal commands change
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [terminalCommands]);
+
   // Function to send message to backend
   const handleSendMessage = async () => {
     if (!messageInput.trim() || loading || !socket || !connected) return;
@@ -257,6 +280,94 @@ export default function Home() {
     
     setConsolidatedMessages(newConsolidatedMessages);
   }, [messages]);
+
+  // Function to handle terminal command execution
+  const handleTerminalCommand = async () => {
+    if (!terminalInput.trim() || terminalProcessing || !socket || !connected) return;
+
+    // Create a new terminal command object
+    const newCommand: TerminalCommand = {
+      id: Date.now().toString(),
+      command: terminalInput,
+      output: '',
+      timestamp: Date.now(),
+      isComplete: false
+    };
+
+    // Add the command to the list
+    setTerminalCommands(prev => [...prev, newCommand]);
+    setTerminalInput('');
+    setTerminalProcessing(true);
+
+    try {
+      // Send the terminal command directly via Socket.IO
+      socket.emit('terminal_command', { command: terminalInput });
+    } catch (error) {
+      console.error('Error sending terminal command:', error);
+      
+      // Update the command with error information
+      setTerminalCommands(prev => 
+        prev.map(cmd => 
+          cmd.id === newCommand.id 
+            ? { ...cmd, output: 'Error executing command: Connection error', isComplete: true }
+            : cmd
+        )
+      );
+      setTerminalProcessing(false);
+    }
+  };
+
+  // Socket event handlers for terminal commands
+  useEffect(() => {
+    if (!socket) return;
+
+    // Listen for terminal output events
+    socket.on('terminal_output', (data) => {
+      console.log('Received terminal output:', data);
+      
+      // Find the most recent incomplete command and update it
+      const commandId = data.commandId || 
+        terminalCommands.find(cmd => !cmd.isComplete)?.id;
+      
+      if (commandId) {
+        setTerminalCommands(prev => 
+          prev.map(cmd => 
+            cmd.id === commandId
+              ? { 
+                  ...cmd, 
+                  output: cmd.output + (data.output || ''), 
+                  isComplete: data.isComplete || false,
+                  workingDir: data.workingDir || cmd.workingDir, // Update working directory if provided
+                  returnCode: data.returnCode
+                }
+              : cmd
+          )
+        );
+        
+        if (data.isComplete) {
+          setTerminalProcessing(false);
+          
+          // Store the session ID received from the server
+          if (data.sessionId) {
+            localStorage.setItem('terminalSessionId', data.sessionId);
+          }
+        }
+      }
+    });
+
+    return () => {
+      socket.off('terminal_output');
+    };
+  }, [socket, terminalCommands]);
+
+  // Initialize terminal session ID on component mount
+  useEffect(() => {
+    // Create and store a unique session ID for this terminal instance if not already present
+    if (!localStorage.getItem('terminalSessionId')) {
+      const sessionId = `term_${Date.now()}`;
+      localStorage.setItem('terminalSessionId', sessionId);
+    }
+  }, []);
 
   return (
     <>
@@ -370,34 +481,128 @@ export default function Home() {
             
             {/* Tool results container - 40% width */}
             <div className={styles.toolResultsContainer}>
-              <div className={styles.toolResultsHeader}>
-                <h2>{toolResults ? toolResults.title : 'Security Analysis'}</h2>
-                <span>{toolResults ? new Date(toolResults.timestamp).toLocaleTimeString() : ''}</span>
+              {/* Tab navigation */}
+              <div className={styles.tabsContainer}>
+                <button 
+                  className={`${styles.tabButton} ${activeTab === 'analysis' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTab('analysis')}
+                >
+                  Analysis
+                </button>
+                <button 
+                  className={`${styles.tabButton} ${activeTab === 'terminal' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTab('terminal')}
+                >
+                  Terminal
+                </button>
               </div>
-              <div className={styles.toolResultsContent}>
-                {toolResults ? (
-                  <div className={styles.markdownContent}>
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeHighlight, rehypeRaw]}
-                      components={{
-                        pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
-                        code: ({node, inline, ...props}) => 
-                          inline 
-                            ? <code className={styles.inlineCode} {...props} />
-                            : <code className={styles.code} {...props} />
-                      }}
-                    >
-                      {toolResults.content}
-                    </ReactMarkdown>
+
+              {/* Analysis tab content */}
+              {activeTab === 'analysis' && (
+                <>
+                  <div className={styles.toolResultsHeader}>
+                    <h2>{toolResults ? toolResults.title : 'Security Analysis'}</h2>
+                    <span>{toolResults ? new Date(toolResults.timestamp).toLocaleTimeString() : ''}</span>
                   </div>
-                ) : (
-                  <div className={styles.noToolResults}>
-                    <p>Awaiting security tool execution...</p>
-                    <p>Use the agent to run security tools like nmap, metasploit, or other available tools.</p>
+                  <div className={styles.toolResultsContent}>
+                    {toolResults ? (
+                      <div className={styles.markdownContent}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                          components={{
+                            pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
+                            code: ({node, inline, ...props}) => 
+                              inline 
+                                ? <code className={styles.inlineCode} {...props} />
+                                : <code className={styles.code} {...props} />
+                          }}
+                        >
+                          {toolResults.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className={styles.noToolResults}>
+                        <p>Awaiting security tool execution...</p>
+                        <p>Use the agent to run security tools like nmap, metasploit, or other available tools.</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
+
+              {/* Terminal tab content */}
+              {activeTab === 'terminal' && (
+                <div className={styles.reactTerminalContainer}>
+                  <Terminal
+                    name="CyberSec Terminal"
+                    colorMode={ColorMode.Dark}
+                    prompt={terminalCommands.length > 0 && terminalCommands[terminalCommands.length-1]?.workingDir 
+                      ? `${terminalCommands[terminalCommands.length-1].workingDir}$` 
+                      : `~$`}
+                    onInput={(terminalInput) => {
+                      if (!terminalProcessing && connected) {
+                        // Create command object
+                        const newCommand: TerminalCommand = {
+                          id: Date.now().toString(),
+                          command: terminalInput,
+                          output: '',
+                          timestamp: Date.now(),
+                          isComplete: false,
+                          workingDir: terminalCommands.length > 0 && terminalCommands[terminalCommands.length-1]?.workingDir 
+                            ? terminalCommands[terminalCommands.length-1].workingDir 
+                            : '~'
+                        };
+                        
+                        // Add to commands list
+                        setTerminalCommands(prev => [...prev, newCommand]);
+                        setTerminalProcessing(true);
+                        
+                        // Send to server
+                        if (socket) {
+                          socket.emit('terminal_command', { 
+                            command: terminalInput,
+                            id: newCommand.id,
+                            sessionId: localStorage.getItem('terminalSessionId') || undefined
+                          });
+                        }
+                      }
+                      return true; // Returns true to indicate the command was handled
+                    }}
+                  >
+                    <TerminalOutput>Welcome to the CyberSec Terminal. Type commands to interact with the server.</TerminalOutput>
+                    <TerminalOutput>Type 'help' for available commands or use any standard Unix/Linux command.</TerminalOutput>
+                    <TerminalOutput>Connected: {connected ? 'Yes ✓' : 'No ✗'}</TerminalOutput>
+                    <TerminalOutput>---</TerminalOutput>
+                    
+                    {terminalCommands.map((cmd) => (
+                      <React.Fragment key={cmd.id}>
+                        <TerminalInput>{cmd.command}</TerminalInput>
+                        {cmd.output && (
+                          <TerminalOutput>
+                            {cmd.output}
+                          </TerminalOutput>
+                        )}
+                        {!cmd.isComplete && (
+                          <TerminalOutput>
+                            <span className={styles.processingIndicator}>Processing...</span>
+                          </TerminalOutput>
+                        )}
+                      </React.Fragment>
+                    ))}
+                    
+                    {terminalProcessing && (
+                      <TerminalOutput>
+                        <div className={styles.loadingDots}>
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </TerminalOutput>
+                    )}
+                  </Terminal>
+                </div>
+              )}
             </div>
           </div>
         </main>

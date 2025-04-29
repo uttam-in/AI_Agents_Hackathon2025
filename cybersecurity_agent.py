@@ -6,6 +6,7 @@ import subprocess
 import re
 import json
 import os
+import time
 from typing import List, Dict, Any
 import uvicorn
 from fastapi import FastAPI
@@ -15,8 +16,11 @@ import socketio
 import sys
 
 from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
+from terminal_plugin.src.terminal_tools import TerminalTools
+from terminal_plugin.terminal_plugin import TerminalPlugin
 
 # Import the plugins
+from terminal_plugin.terminal_plugin import TerminalPlugin
 from wireshark_plugin.wireshark_plugin import WiresharkToolsPlugin
 from metasploit_plugin.metasploit_plugin import MetasploitToolsPlugin
 from hydra_plugin.hydra_plugin import HydraPlugin
@@ -28,7 +32,6 @@ from netdiscover_plugin.netdiscover_plugin import NetdiscoverToolsPlugin
 from nbtscan_plugin.nbtscan_plugin import NBTScanToolsPlugin
 from searchsploit_plugin.searchsploit_plugin import SearchSploitPlugin
 from python_plugin.python_plugin import PythonScriptPlugin
-from terminal_plugin.terminal_plugin import TerminalPlugin
 
 
 # Create a standalone FastAPI app for Socket.IO
@@ -48,6 +51,7 @@ standalone_app.add_middleware(
 # Global agent and thread reference for Socket.IO
 global_agent = None
 global_thread = None
+terminal_tools = TerminalTools()  # Initialize terminal tools for direct commands
 
 
 @cl.on_chat_start
@@ -252,6 +256,56 @@ async def chat_message(sid, data):
         error_message = f"Error processing your request: {str(e)}"
         print(f"Socket.IO error: {error_message}")
         await sio.emit('error', {'error': error_message}, room=sid)
+
+@sio.event
+async def terminal_command(sid, data):
+    """Handle direct terminal commands from the browser terminal"""
+    command = data.get('command', '')
+    command_id = data.get('id', str(time.time()))
+    session_id = data.get('sessionId', sid)  # Use provided session ID or fall back to socket ID
+    print(f"Received terminal command: {command} for session {session_id}")
+    
+    # Start execution notification
+    await sio.emit('terminal_output', {
+        'commandId': command_id,
+        'output': f"$ {command}\n",
+        'isComplete': False,
+        'sessionId': session_id
+    }, room=sid)
+    
+    try:
+        # Execute the command using the terminal tools with session tracking
+        result = terminal_tools.execute_command(command, timeout=60, session_id=session_id)
+        
+        # Include the working directory in the output for prompt updates
+        output = ""
+        if result["stdout"]:
+            output += result["stdout"] + "\n"
+        if result["stderr"]:
+            output += result["stderr"] + "\n"
+        
+        # Add working directory info for the terminal prompt
+        working_dir = result.get("working_dir", os.getcwd())
+        
+        # Send the output
+        await sio.emit('terminal_output', {
+            'commandId': command_id,
+            'output': output,
+            'isComplete': True,
+            'workingDir': working_dir,
+            'sessionId': session_id,
+            'returnCode': result.get("return_code", 0)
+        }, room=sid)
+        
+    except Exception as e:
+        error_message = f"Error executing command: {str(e)}"
+        print(f"Terminal command error: {error_message}")
+        await sio.emit('terminal_output', {
+            'commandId': command_id,
+            'output': error_message,
+            'isComplete': True,
+            'sessionId': session_id
+        }, room=sid)
 
 # Function to start the standalone Socket.IO server
 def start_standalone_server():
