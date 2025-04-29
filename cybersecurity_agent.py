@@ -59,6 +59,7 @@ active_tools = {}  # Track active tools
 # Function to create a plugin wrapper that tracks tool usage
 def create_tracking_wrapper(plugin, plugin_name, sid):
     """Create a wrapper around plugin functions to track when they're called"""
+    print(f"Creating tracking wrapper for plugin: {plugin_name}")
     global current_sid
     current_sid = sid
     
@@ -75,6 +76,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
             def make_wrapper(method_name, orig_method):
                 async def emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
                     """Helper function to emit tool events directly"""
+                    
                     try:
                         if event_type == 'tool_usage':
                             # Legacy format
@@ -100,21 +102,13 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 event_data['duration'] = duration
                                 
                             await sio.emit('tool_execution', event_data, room=current_sid)
-                            # Print tool usage when emitted
-                            print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status}")
+                            print(f"Tool {status} event emitted for {tool_name}")
                     except Exception as e:
                         print(f"Error emitting {event_type} event: {e}")
                 
                 def wrapper(*args, **kwargs):
                     # Get the friendly tool name
                     tool_name = get_friendly_tool_name(plugin_name, method_name)
-                    
-                    # Highly visible output for tool selection
-                    if tool_name:
-                        print(f"\n{'='*50}")
-                        print(f"🔧 TOOL SELECTED BY LLM: '{tool_name}'")
-                        print(f"📝 PLUGIN: {plugin_name} → FUNCTION: {method_name}")
-                        print(f"{'='*50}\n")
                     
                     # Capture parameters for logging
                     parameters_dict = {}
@@ -141,13 +135,6 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                             parameters_dict[k] = str(v)
                         else:
                             parameters_dict[k] = v
-                    
-                    # Print parameters
-                    if parameters_dict and tool_name:
-                        print(f"📝 Parameters:")
-                        for param_name, param_value in parameters_dict.items():
-                            print(f"   - {param_name}: {param_value}")
-                        print()
                     
                     # Convert parameters to JSON string for logging
                     parameters_json = json.dumps(parameters_dict, default=str)
@@ -183,11 +170,6 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 duration = time.time() - active_tools[tool_id]['start_time']
                                 
                             print(f"Tool completed successfully: {tool_name}")
-                            # Print result summary
-                            if isinstance(result, str):
-                                result_preview = result[:150] + "..." if len(result) > 150 else result
-                                print(f"📋 Result preview: {result_preview}\n")
-                                
                             # Use direct emitting with asyncio.create_task
                             asyncio.create_task(emit_tool_event('tool_usage', tool_name, 'completed'))
                             asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'completed', 
@@ -204,7 +186,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 active_tools[tool_id]['error'] = str(e)
                                 duration = time.time() - active_tools[tool_id]['start_time']
                             
-                            print(f"❌ Tool failed: {tool_name} with error: {str(e)}")
+                            print(f"Tool failed: {tool_name} with error: {str(e)}")
                             # Use direct emitting with asyncio.create_task
                             asyncio.create_task(emit_tool_event('tool_execution', tool_name, 'failed', 
                                                                tool_id=tool_id, error=str(e), duration=duration))
@@ -319,118 +301,59 @@ def get_friendly_tool_name(plugin_name, function_name):
     return None  # Return None for system functions we don't want to show
 
 
-# @cl.on_chat_start
-# async def on_chat_start():
+@cl.on_chat_start
+async def on_chat_start():
     # Setup Semantic Kernel
+    kernel = sk.Kernel()
 
+    # Add your AI service (e.g., OpenAI)
+    # Make sure OPENAI_API_KEY and OPENAI_ORG_ID are set in your environment
+    ai_service = OpenAIChatCompletion()
+    kernel.add_service(ai_service)
 
+    # Import the plugins
+    kernel.add_plugin(NmapNetworkingToolsPlugin(), plugin_name="NetworkTools")
+    kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
+    
+    # Add Hydra plugin
+    kernel.add_plugin(HydraPlugin(), plugin_name="HydraTools")
+    
+    # Configure Metasploit - now using local msfconsole installation
+    kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
+    
+    # Add Linux Tools plugin
+    kernel.add_plugin(LinuxToolsPlugin(), plugin_name="LinuxTools")
+    
+    # Add SQLMap tools plugin
+    kernel.add_plugin(SQLMapToolsPlugin(), plugin_name="SQLMapTools")
+    
+    # Add Burp Suite tools plugin
+    kernel.add_plugin(BurpSuiteToolsPlugin(), plugin_name="BurpSuiteTools")
+    
+    # Add Netdiscover tools plugin
+    kernel.add_plugin(NetdiscoverToolsPlugin(), plugin_name="NetdiscoverTools")
+    
+    # Add NBTScan tools plugin
+    kernel.add_plugin(NBTScanToolsPlugin(), plugin_name="NBTScanTools")
+    
+    # Add SearchSploit tools plugin
+    kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
+    
+    # Add Python script plugin
+    kernel.add_plugin(PythonScriptPlugin(), plugin_name="PythonScriptTools")
+    
+    # Add Terminal plugin
+    kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
+    
+    # Register the tool tracking handlers for Chainlit's WebSocket session
+    # This uses a special session ID for Chainlit
+    register_tool_tracking(kernel, "chainlit_session")
     
     # Instantiate and add the Chainlit filter to the kernel
     # This will automatically capture function calls as Steps
-    
+    sk_filter = cl.SemanticKernelFilter(kernel=kernel)
 
-
-
-
-
-
-@cl.on_message
-async def on_message(message: cl.Message):
-    agent = cl.user_session.get("agent") # type: Agent
-    thread = cl.user_session.get("thread") # type: ChatHistoryAgentThread 
-
-    answer = cl.Message(content="")
-
-    async for response in agent.invoke_stream(messages=message.content, thread=thread):
-
-        if response.content:
-            await answer.stream_token(str(response.content))
-
-        thread = response.thread
-        cl.user_session.set("thread", thread)
-
-    # Send the final message
-    await answer.send()
-
-
-# Socket.IO event handlers
-@sio.event
-async def connect(sid, environ):
-    global current_sid
-    print(f"Client connected via Socket.IO: {sid}")
-    # Set the current SID for tool tracking
-    current_sid = sid
-
-@sio.event
-async def disconnect(sid):
-    print(f"Client disconnected from Socket.IO: {sid}")
-
-@sio.event
-async def chat_message(sid, data):
-    """Handle incoming chat messages from the client"""
-    global global_agent, global_thread, current_sid    
-    
-    message = data.get('message', '')
-    print(f"Received message via Socket.IO: {message}")
-    
-    # Always update the current SID for tool tracking
-    current_sid = sid
-    
-    # Initialize the agent if not already done
-    if global_agent is None:
-        # Create a simple kernel
-        kernel = sk.Kernel()
-        ai_service = OpenAIChatCompletion()
-        kernel.add_service(ai_service)
-        
-        
-        # Import the plugins
-        kernel.add_plugin(NmapNetworkingToolsPlugin(), plugin_name="NetworkTools")
-        kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
-        
-        # Add Hydra plugin
-        kernel.add_plugin(HydraPlugin(), plugin_name="HydraTools")
-        
-        # Configure Metasploit - now using local msfconsole installation
-        kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
-        
-        # Add Linux Tools plugin
-        kernel.add_plugin(LinuxToolsPlugin(), plugin_name="LinuxTools")
-        
-        # Add SQLMap tools plugin
-        kernel.add_plugin(SQLMapToolsPlugin(), plugin_name="SQLMapTools")
-        
-        # Add Burp Suite tools plugin
-        kernel.add_plugin(BurpSuiteToolsPlugin(), plugin_name="BurpSuiteTools")
-        
-        # Add Netdiscover tools plugin
-        kernel.add_plugin(NetdiscoverToolsPlugin(), plugin_name="NetdiscoverTools")
-        
-        # Add NBTScan tools plugin
-        kernel.add_plugin(NBTScanToolsPlugin(), plugin_name="NBTScanTools")
-        
-        # Add SearchSploit tools plugin
-        kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
-        
-        # Add Python script plugin
-        kernel.add_plugin(PythonScriptPlugin(), plugin_name="PythonScriptTools")
-        
-        # Add Terminal plugin
-        kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
-        
-        sk_filter = cl.SemanticKernelFilter(kernel=kernel)
-        
-        # Register the tool tracking handlers for Chainlit's WebSocket session
-        # This uses a special session ID for Chainlit
-        register_tool_tracking(kernel, "chainlit_session")        
-        
-        # global_agent = ChatCompletionAgent(
-        #     kernel=kernel,
-        #     name="CyberSecAgent",
-        #     instructions="You are a cybersecurity assistant that can help with various cybersecurity tasks.",
-        # )
-        
-        global_agent = ChatCompletionAgent(
+    agent = ChatCompletionAgent(
         kernel=kernel,
         name="CyberSecAgent",
         instructions="""You are a grey hat hacker assistant with advanced knowledge of cybersecurity, penetration testing, and network analysis. 
@@ -480,21 +403,89 @@ For packet capture and analysis:
 
 You are an expert guide for anyone learning about offensive and defensive cybersecurity techniques. Always remind users to use this knowledge responsibly and legally.""",
     )
+
+    thread: ChatHistoryAgentThread = None
+    cl.user_session.set("agent", agent)
+    cl.user_session.set("thread", thread)
+    
+    # Store references globally for Socket.IO
+    global global_agent, global_thread
+    global_agent = agent
+    global_thread = thread
+
+
+@cl.on_message
+async def on_message(message: cl.Message):
+    agent = cl.user_session.get("agent") # type: Agent
+    thread = cl.user_session.get("thread") # type: ChatHistoryAgentThread 
+
+    answer = cl.Message(content="")
+
+    async for response in agent.invoke_stream(messages=message.content, thread=thread):
+
+        if response.content:
+            await answer.stream_token(str(response.content))
+
+        thread = response.thread
+        cl.user_session.set("thread", thread)
+
+    # Send the final message
+    await answer.send()
+
+
+# Socket.IO event handlers
+@sio.event
+async def connect(sid, environ):
+    global current_sid
+    print(f"Client connected via Socket.IO: {sid}")
+    # Set the current SID for tool tracking
+    current_sid = sid
+
+@sio.event
+async def disconnect(sid):
+    print(f"Client disconnected from Socket.IO: {sid}")
+
+@sio.event
+async def chat_message(sid, data):
+    """Handle incoming chat messages from the client"""
+    global global_agent, global_thread, current_sid
+    
+    message = data.get('message', '')
+    print(f"Received message via Socket.IO: {message}")
+    
+    # Always update the current SID for tool tracking
+    current_sid = sid
+    
+    # Initialize the agent if not already done
+    if global_agent is None:
+        # Create a simple kernel
+        kernel = sk.Kernel()
+        ai_service = OpenAIChatCompletion()
+        kernel.add_service(ai_service)
+        
+        # Add plugins (simplified for Socket.IO access)
+        kernel.add_plugin(NmapNetworkingToolsPlugin(), plugin_name="NetworkTools")
+        kernel.add_plugin(WiresharkToolsPlugin(), plugin_name="WiresharkTools")
+        kernel.add_plugin(HydraPlugin(), plugin_name="HydraTools")
+        kernel.add_plugin(SQLMapToolsPlugin(), plugin_name="SQLMapTools")
+        kernel.add_plugin(MetasploitToolsPlugin(msf_path="/usr/bin"), plugin_name="MetasploitTools")
+        kernel.add_plugin(SearchSploitPlugin(), plugin_name="SearchSploitTools")
+        kernel.add_plugin(TerminalPlugin(), plugin_name="TerminalTools")
+        kernel.add_plugin(BurpSuiteToolsPlugin(), plugin_name="BurpSuiteTools")
+        kernel.add_plugin(NetdiscoverToolsPlugin(), plugin_name="NetdiscoverTools")
+        kernel.add_plugin(NBTScanToolsPlugin(), plugin_name="NBTScanTools")
+        
+        global_agent = ChatCompletionAgent(
+            kernel=kernel,
+            name="CyberSecAgent",
+            instructions="You are a cybersecurity assistant that can help with various cybersecurity tasks.",
+        )
         
         # Register tool tracking for this kernel
         register_tool_tracking(kernel, sid)
     else:
         # Make sure we're using the current session for tool tracking notifications
         current_sid = sid
-        
-    thread: ChatHistoryAgentThread = None
-    cl.user_session.set("agent", global_agent)
-    cl.user_session.set("thread", thread)
-    
-    # Store references globally for Socket.IO
-    
-    global_agent = global_agent
-    global_thread = thread        
     
     response_text = ""
     buffer = ""
