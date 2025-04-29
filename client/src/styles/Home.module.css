@@ -42,6 +42,25 @@
   font-size: 2rem;
 }
 
+.connectionStatus {
+  margin-bottom: 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.connected {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.disconnected {
+  color: #f44336;
+  font-weight: bold;
+}
+
 .chatContainer {
   width: 100%;
   height: 600px;
@@ -79,6 +98,9 @@
 .assistantMessage {
   align-self: flex-start;
   background-color: var(--gray-alpha-200);
+  white-space: pre-wrap;
+  font-family: var(--font-geist-mono);
+  font-size: 0.9rem;
 }
 
 .messageName {
