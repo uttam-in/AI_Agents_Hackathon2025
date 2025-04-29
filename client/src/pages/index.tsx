@@ -786,9 +786,36 @@ export default function Home() {
                   onClick={handleSendMessage}
                   disabled={loading || !connected}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
+                  <svg 
+                    className={styles.sendIcon}
+                    viewBox="0 0 512 512" 
+                    width="54" 
+                    height="54" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    {/* BB-8 Body - Main circle */}
+                    <circle cx="256" cy="320" r="180" fill="#F0F0F0" className={styles.bb8Body} />
+                    
+                    {/* BB-8 Head */}
+                    <circle cx="256" cy="110" r="90" fill="#F0F0F0" className={styles.bb8Head} />
+                    
+                    {/* BB-8 Body Details - Orange accents */}
+                    <circle cx="256" cy="320" r="150" fill="none" stroke="#FF6D00" strokeWidth="8" strokeDasharray="20,20" className={styles.bb8Detail} />
+                    <circle cx="200" cy="260" r="25" fill="#FF6D00" className={styles.bb8Detail} />
+                    <circle cx="300" cy="380" r="30" fill="#FF6D00" className={styles.bb8Detail} />
+                    <circle cx="240" cy="380" r="15" fill="#FF6D00" className={styles.bb8Detail} />
+                    
+                    {/* BB-8 Head Details */}
+                    <circle cx="256" cy="110" r="75" fill="none" stroke="#FF6D00" strokeWidth="6" className={styles.bb8Detail} />
+                    <circle cx="256" cy="110" r="60" fill="none" stroke="#888" strokeWidth="3" strokeDasharray="10,5" className={styles.bb8Detail} />
+                    
+                    {/* BB-8 Eye */}
+                    <circle cx="256" cy="80" r="15" fill="#333" className={styles.bb8Eye} />
+                    <circle cx="252" cy="76" r="5" fill="#FFF" className={styles.bb8Highlight} />
+                    
+                    {/* BB-8 Antennas */}
+                    <line x1="256" y1="30" x2="256" y2="55" stroke="#444" strokeWidth="5" className={styles.bb8Antenna} />
+                    <circle cx="256" cy="25" r="8" fill="#444" className={styles.bb8Antenna} />
                   </svg>
                 </button>
               </div>
