@@ -512,10 +512,143 @@ export default function Home() {
     };
   }, []);
 
+  // Lightsaber logo component for the header
+  const LightsaberLogo = () => (
+    <div className={styles.lightsaberLogo}>
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+        {/* Lightsaber handle */}
+        <g className={styles.lightsaberHandle}>
+          <rect x="40" y="60" width="20" height="30" rx="2" fill="#555" />
+          <rect x="42" y="65" width="16" height="5" rx="1" fill="#333" />
+          <rect x="42" y="75" width="16" height="5" rx="1" fill="#333" />
+          <rect x="45" y="85" width="10" height="5" rx="1" fill="#222" />
+          {/* Energy core */}
+          <circle cx="50" cy="60" r="5" fill="#00dfff">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="1.5s" repeatCount="indefinite" />
+          </circle>
+        </g>
+        
+        {/* Lightsaber blade with swinging motion */}
+        <g className={styles.lightsaberBlade}>
+          {/* Main blade */}
+          <rect x="45" y="10" width="10" height="50" rx="5" fill="#00bfff">
+            <animate attributeName="height" values="50;55;50" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="-5 50 60"
+              to="5 50 60"
+              dur="1.5s"
+              repeatCount="indefinite"
+              additive="sum"
+              calcMode="spline"
+              keySplines="0.5 0 0.5 1; 0.5 0 0.5 1"
+              keyTimes="0; 0.5; 1"
+            />
+          </rect>
+          
+          {/* Inner glow */}
+          <rect x="47" y="10" width="6" height="50" rx="3" fill="#80dfff" opacity="0.6">
+            <animate attributeName="height" values="50;55;50" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.6;0.8;0.6" dur="1.5s" repeatCount="indefinite" />
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="-5 50 60"
+              to="5 50 60"
+              dur="1.5s"
+              repeatCount="indefinite"
+              additive="sum"
+              calcMode="spline"
+              keySplines="0.5 0 0.5 1; 0.5 0 0.5 1"
+              keyTimes="0; 0.5; 1"
+            />
+          </rect>
+          
+          {/* Outer glow */}
+          <rect x="43" y="10" width="14" height="50" rx="7" fill="#00bfff" opacity="0.3">
+            <animate attributeName="height" values="50;55;50" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.3;0.5;0.3" dur="1.5s" repeatCount="indefinite" />
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="-5 50 60"
+              to="5 50 60"
+              dur="1.5s"
+              repeatCount="indefinite"
+              additive="sum"
+              calcMode="spline"
+              keySplines="0.5 0 0.5 1; 0.5 0 0.5 1"
+              keyTimes="0; 0.5; 1"
+            />
+          </rect>
+          
+          {/* Motion blur effect */}
+          <path d="M 45,10 Q 47,12 50,10 Q 53,12 55,10 L 55,58 Q 53,60 50,58 Q 47,60 45,58 Z" fill="#00bfff" opacity="0.2">
+            <animate attributeName="opacity" values="0.1;0.2;0.1" dur="1s" repeatCount="indefinite" />
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="-8 50 60"
+              to="8 50 60"
+              dur="1.5s"
+              repeatCount="indefinite"
+              additive="sum"
+              calcMode="spline"
+              keySplines="0.5 0 0.5 1; 0.5 0 0.5 1"
+              keyTimes="0; 0.5; 1"
+            />
+          </path>
+          
+          {/* Blade tip shine */}
+          <circle cx="50" cy="10" r="5" fill="#ffffff" opacity="0.5">
+            <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="r" values="4;5;4" dur="2s" repeatCount="indefinite" />
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="-5 50 60"
+              to="5 50 60"
+              dur="1.5s"
+              repeatCount="indefinite"
+              additive="sum"
+              calcMode="spline"
+              keySplines="0.5 0 0.5 1; 0.5 0 0.5 1"
+              keyTimes="0; 0.5; 1"
+            />
+          </circle>
+        </g>
+        
+        {/* Strike effect (appears occasionally) */}
+        <g className={styles.lightsaberStrike}>
+          <path d="M 35,20 L 65,55" stroke="#ffffff" strokeWidth="2" opacity="0">
+            <animate 
+              attributeName="opacity" 
+              values="0;0;0;0.8;0" 
+              dur="5s" 
+              repeatCount="indefinite"
+              keyTimes="0;0.7;0.8;0.82;0.9" 
+            />
+          </path>
+          <path d="M 35,55 L 65,25" stroke="#ffffff" strokeWidth="2" opacity="0">
+            <animate 
+              attributeName="opacity" 
+              values="0;0;0;0;0.8;0" 
+              dur="5s" 
+              repeatCount="indefinite"
+              keyTimes="0;0.75;0.85;0.86;0.88;0.95" 
+            />
+          </path>
+        </g>
+      </svg>
+    </div>
+  );
+
   return (
     <>
       <Head>
-        <title>Cybersecurity AI Agent</title>
+        <title>Jedi</title>
         <meta name="description" content="Advanced Cybersecurity AI Agent Interface" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -531,8 +664,8 @@ export default function Home() {
           {/* Header Bar with Status */}
           <div className={styles.headerBar}>
             <div className={styles.logoContainer}>
-              <span className={styles.logoIcon}>🛡️</span>
-              <h1 className={styles.title}>CyberSec Command Center</h1>
+              <LightsaberLogo />
+              <h1 className={styles.title}>Jedi</h1>
             </div>
             <div className={styles.statusBar}>
               <div className={styles.statusItem}>

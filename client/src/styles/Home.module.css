@@ -881,3 +881,36 @@
   50% { opacity: 0.3; transform: scale(1.2); }
   100% { opacity: 0.7; transform: scale(1); }
 }
+
+.lightsaberLogo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 12px;
+  filter: drop-shadow(0 0 10px rgba(0, 178, 255, 0.5));
+}
+
+.lightsaberHandle {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
+}
+
+.lightsaberBlade {
+  filter: drop-shadow(0 0 8px rgba(0, 219, 255, 0.7));
+  transform-origin: 50% 60%;
+  animation: lightsaberSway 6s ease-in-out infinite;
+}
+
+.lightsaberStrike {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
+}
+
+@keyframes lightsaberSway {
+  0% { transform: rotate(-2deg); }
+  25% { transform: rotate(3deg); }
+  50% { transform: rotate(-1deg); }
+  75% { transform: rotate(2deg); }
+  100% { transform: rotate(-2deg); }
+}
