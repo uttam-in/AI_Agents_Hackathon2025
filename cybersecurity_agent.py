@@ -88,7 +88,8 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                 'tool': tool_name,
                                 'status': status,
                                 'timestamp': time.time(),
-                                'tool_id': tool_id
+                                'tool_id': tool_id,
+                                'isPlugin': True  # Mark that this is a plugin execution
                             }
                             
                             if parameters:
