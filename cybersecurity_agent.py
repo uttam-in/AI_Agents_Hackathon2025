@@ -341,6 +341,18 @@ async def chat_message(sid, data):
     # Always update the current SID for tool tracking
     current_sid = sid
     
+    # Track message processing as a tool execution
+    message_tool_id = f"message_processing_{time.time()}"
+    
+    # Emit tool execution start event for the message processing
+    await sio.emit('tool_execution', {
+        'tool': 'Message Processing',
+        'status': 'started',
+        'timestamp': time.time(),
+        'tool_id': message_tool_id,
+        'parameters': json.dumps({'message': message})
+    }, room=sid)
+    
     # Initialize the agent if not already done
     if global_agent is None:
         # Create a simple kernel
@@ -422,6 +434,7 @@ You are an expert guide for anyone learning about offensive and defensive cybers
     response_text = ""
     buffer = ""
     sentence_buffer = ""
+    start_time = time.time()
     
     try:
         # Initial message to confirm processing
@@ -453,11 +466,32 @@ You are an expert guide for anyone learning about offensive and defensive cybers
         
         # Send the complete response when finished
         await sio.emit('response_complete', {'response': response_text}, room=sid)
+        
+        # Emit tool execution completion event for the message processing
+        duration = time.time() - start_time
+        await sio.emit('tool_execution', {
+            'tool': 'Message Processing',
+            'status': 'completed',
+            'timestamp': time.time(),
+            'tool_id': message_tool_id,
+            'duration': duration
+        }, room=sid)
     
     except Exception as e:
         error_message = f"Error processing your request: {str(e)}"
         print(f"Socket.IO error: {error_message}")
         await sio.emit('error', {'error': error_message}, room=sid)
+        
+        # Emit tool execution failure event for the message processing
+        duration = time.time() - start_time
+        await sio.emit('tool_execution', {
+            'tool': 'Message Processing',
+            'status': 'failed',
+            'timestamp': time.time(),
+            'tool_id': message_tool_id,
+            'error': str(e),
+            'duration': duration
+        }, room=sid)
 
 @sio.event
 async def terminal_command(sid, data):
@@ -467,6 +501,18 @@ async def terminal_command(sid, data):
     session_id = data.get('sessionId', sid)  # Use provided session ID or fall back to socket ID
     print(f"Received terminal command: {command} for session {session_id}")
     
+    # Track terminal command as a tool execution
+    terminal_tool_id = f"terminal_{time.time()}"
+    
+    # Emit tool execution start event for the terminal command
+    await sio.emit('tool_execution', {
+        'tool': 'Terminal Command',
+        'status': 'started',
+        'timestamp': time.time(),
+        'tool_id': terminal_tool_id,
+        'parameters': json.dumps({'command': command})
+    }, room=sid)
+    
     # Start execution notification
     await sio.emit('terminal_output', {
         'commandId': command_id,
@@ -474,6 +520,8 @@ async def terminal_command(sid, data):
         'isComplete': False,
         'sessionId': session_id
     }, room=sid)
+    
+    start_time = time.time()
     
     try:
         # Execute the command using the terminal tools with session tracking
@@ -499,6 +547,19 @@ async def terminal_command(sid, data):
             'returnCode': result.get("return_code", 0)
         }, room=sid)
         
+        # Emit tool execution completion event for the terminal command
+        duration = time.time() - start_time
+        success = result.get("return_code", 0) == 0
+        
+        await sio.emit('tool_execution', {
+            'tool': 'Terminal Command',
+            'status': 'completed' if success else 'failed',
+            'timestamp': time.time(),
+            'tool_id': terminal_tool_id,
+            'duration': duration,
+            'result': f"Exit code: {result.get('return_code', 0)}"
+        }, room=sid)
+        
     except Exception as e:
         error_message = f"Error executing command: {str(e)}"
         print(f"Terminal command error: {error_message}")
@@ -507,6 +568,17 @@ async def terminal_command(sid, data):
             'output': error_message,
             'isComplete': True,
             'sessionId': session_id
+        }, room=sid)
+        
+        # Emit tool execution failure event for the terminal command
+        duration = time.time() - start_time
+        await sio.emit('tool_execution', {
+            'tool': 'Terminal Command',
+            'status': 'failed',
+            'timestamp': time.time(),
+            'tool_id': terminal_tool_id,
+            'error': str(e),
+            'duration': duration
         }, room=sid)
 
 # Function to start the Socket.IO server
