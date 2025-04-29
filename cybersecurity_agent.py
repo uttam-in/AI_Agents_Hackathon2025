@@ -76,6 +76,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
             def make_wrapper(method_name, orig_method):
                 async def emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
                     """Helper function to emit tool events directly"""
+                    print(f"Emitting {event_type} event for tool: {tool_name}, status: {status}")
                     try:
                         if event_type == 'tool_usage':
                             # Legacy format
