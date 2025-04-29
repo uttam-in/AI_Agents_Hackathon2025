@@ -910,6 +910,7 @@
 
 /* Active tools display */
 .activeToolsDisplay {
+  display: none; /* Hide the floating box that appears during tool execution */
   position: absolute;
   top: 0;
   left: 50%;
@@ -1070,16 +1071,16 @@
 .toolExecutionItem {
   background-color: rgba(0, 223, 255, 0.05);
   border-radius: 6px;
-  margin-bottom: 10px;
-  padding: 10px;
+  padding: 12px;
   border-left: 3px solid var(--accent-color);
-  position: relative;
-  overflow: hidden;
   transition: all 0.2s ease;
+  margin-bottom: 0;
 }
 
 .toolExecutionItem:hover {
   background-color: rgba(0, 223, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 223, 255, 0.2);
 }
 
 .runningTool {
@@ -1208,46 +1209,4 @@
 .activeButton {
   background-color: rgba(0, 223, 255, 0.3);
   box-shadow: 0 0 5px var(--accent-color);
-}
-
-/* Active Tools Display in the main container */
-.activeToolsDisplay {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
-  border: 1px solid var(--accent-color);
-  border-radius: 4px;
-  padding: 8px;
-  z-index: 10;
-  max-width: 250px;
-}
-
-.activeToolsHeader {
-  font-size: 12px;
-  color: var(--accent-color);
-  margin-bottom: 5px;
-}
-
-.activeToolsList {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.activeTool {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: #fff;
-}
-
-.pulsingDot {
-  width: 8px;
-  height: 8px;
-  background-color: var(--accent-color);
-  border-radius: 50%;
-  display: inline-block;
-  animation: pulse 1.5s infinite;
 }

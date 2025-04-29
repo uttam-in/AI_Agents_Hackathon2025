@@ -129,7 +129,7 @@ export default function Home() {
   // Terminal related states
   const [terminalCommands, setTerminalCommands] = useState<TerminalCommand[]>([]);
   const [terminalInput, setTerminalInput] = useState("");
-  const [activeTab, setActiveTab] = useState<'analysis' | 'terminal'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'terminal' | 'toolhistory'>('analysis');
   const [terminalProcessing, setTerminalProcessing] = useState(false);
   
   // Current assistant message being streamed
@@ -756,14 +756,6 @@ export default function Home() {
                   <span className={styles.disconnected}>Disconnected</span>
                 }
               </div>
-              <div className={styles.toolHistoryToggle}>
-                <button 
-                  className={`${styles.historyButton} ${showToolHistory ? styles.activeButton : ''}`}
-                  onClick={() => setShowToolHistory(!showToolHistory)}
-                >
-                  Tool History
-                </button>
-              </div>
             </div>
           </div>
           
@@ -986,6 +978,12 @@ export default function Home() {
                 >
                   Terminal
                 </button>
+                <button 
+                  className={`${styles.tabButton} ${activeTab === 'toolhistory' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTab('toolhistory')}
+                >
+                  Tool History
+                </button>
               </div>
 
               {/* Analysis tab content */}
@@ -1092,6 +1090,67 @@ export default function Home() {
                     )}
                   </Terminal>
                 </div>
+              )}
+
+              {/* Tool History tab content */}
+              {activeTab === 'toolhistory' && (
+                <>
+                  <div className={styles.toolResultsHeader}>
+                    <h2>Tool Execution History</h2>
+                    <span>{toolExecutions.length} tools used</span>
+                  </div>
+                  <div className={styles.toolResultsContent}>
+                    {toolExecutions.length === 0 ? (
+                      <div className={styles.noToolResults}>
+                        <p>No tools have been executed yet.</p>
+                        <p>Tool history will appear here when the agent uses tools during your conversation.</p>
+                      </div>
+                    ) : (
+                      <div className={styles.toolHistoryContent}>
+                        {toolExecutions.map((execution) => (
+                          <div 
+                            key={execution.id} 
+                            className={`${styles.toolExecutionItem} ${
+                              execution.status === 'completed' ? styles.completedTool : 
+                              execution.status === 'failed' ? styles.failedTool : 
+                              styles.runningTool
+                            }`}
+                          >
+                            <div className={styles.toolName}>
+                              <span className={styles.toolIcon}>🔧</span>
+                              {execution.name}
+                            </div>
+                            <div className={styles.toolTimestamp}>
+                              {new Date(execution.startTime).toLocaleTimeString()}
+                              {execution.endTime && (
+                                <span className={styles.duration}>
+                                  ({((execution.endTime - execution.startTime) / 1000).toFixed(2)}s)
+                                </span>
+                              )}
+                            </div>
+                            <div className={styles.toolStatus}>
+                              {execution.status === 'started' ? (
+                                <span className={styles.runningStatus}>Running</span>
+                              ) : execution.status === 'completed' ? (
+                                <span className={styles.completedStatus}>Completed</span>
+                              ) : (
+                                <span className={styles.failedStatus}>Failed</span>
+                              )}
+                            </div>
+                            {execution.parameters && (
+                              <div className={styles.toolParameters}>
+                                <details>
+                                  <summary>Parameters</summary>
+                                  <pre>{execution.parameters}</pre>
+                                </details>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>
