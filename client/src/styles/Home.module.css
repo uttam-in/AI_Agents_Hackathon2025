@@ -18,6 +18,10 @@
   --terminal-bg: #050913;
   --terminal-text: #d8e9ff;
   --terminal-prompt-color: #00a8ff;
+  --terminal-cmd-color: #ffcc00;
+  --terminal-error-color: #ff5252;
+  --terminal-success-color: #2ecc71;
+  --terminal-font-size: 0.8rem;
   --grid-color: rgba(0, 166, 255, 0.07);
   
   --gray-rgb: 0, 0, 0;
@@ -161,6 +165,36 @@
   width: 100%;
   height: calc(100vh - 60px);
   gap: 0;
+  position: relative;
+}
+
+.resizeHandle {
+  width: 6px;
+  height: 100%;
+  background-color: var(--background-darker);
+  cursor: col-resize;
+  position: absolute;
+  right: 40%; /* Aligns with default 60/40 split */
+  top: 0;
+  z-index: 10;
+  transition: background-color 0.2s;
+}
+
+.resizeHandle:hover,
+.resizeHandle.active {
+  background-color: var(--primary-color);
+}
+
+.resizeHandle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 30px;
+  background-color: var(--accent-color);
+  border-radius: 2px;
 }
 
 .chatContainer {
@@ -172,6 +206,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: width 0.05s ease-out;
 }
 
 .chatContainer::before {
@@ -275,6 +310,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: width 0.05s ease-out;
 }
 
 .toolResultsContainer::before {
@@ -604,39 +640,6 @@
   visibility: hidden;
 }
 
-/* Date and time display */
-.dateTimeDisplay {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(17, 26, 44, 0.8);
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  color: var(--accent-color);
-  font-family: var(--font-geist-mono);
-  font-size: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  box-shadow: var(--border-glow);
-  z-index: 100;
-  backdrop-filter: blur(5px);
-}
-
-.date {
-  opacity: 0.8;
-  color: var(--primary-color);
-}
-
-.time {
-  font-weight: bold;
-  font-size: 1.1rem;
-  letter-spacing: 1px;
-  color: var(--text-light);
-}
-
 /* Additional animations */
 @keyframes radarSweep {
   from { transform: rotate(0deg); }
@@ -723,4 +726,49 @@
     height: 40px;
     font-size: 0.8rem;
   }
+}
+
+.reactTerminalContainer {
+  height: 100%;
+  background-color: var(--terminal-bg);
+  font-family: var(--font-geist-mono);
+  overflow: hidden;
+}
+
+/* Override react-terminal styles */
+.reactTerminalContainer :global(.react-terminal) {
+  height: 100%;
+  padding: 16px;
+  font-size: var(--terminal-font-size) !important;
+  background-color: var(--terminal-bg) !important;
+  color: var(--terminal-text) !important;
+}
+
+.reactTerminalContainer :global(.react-terminal-wrapper) {
+  height: 100%;
+  background-color: var(--terminal-bg) !important;
+}
+
+/* Hide terminal control buttons */
+.reactTerminalContainer :global(.react-terminal-control-btn) {
+  display: none !important;
+}
+
+.reactTerminalContainer :global(.react-terminal-prompt) {
+  color: var(--terminal-prompt-color) !important;
+  font-weight: bold;
+}
+
+.reactTerminalContainer :global(.react-terminal-input) {
+  color: var(--terminal-cmd-color) !important;
+}
+
+.reactTerminalContainer :global(.react-terminal-error) {
+  color: var(--terminal-error-color) !important;
+}
+
+.reactTerminalContainer :global(.react-terminal-output-line) {
+  font-size: var(--terminal-font-size) !important;
+  line-height: 1.4;
+  margin-bottom: 6px;
 }

@@ -48,26 +48,6 @@ const RadarAnimation = ({ loading }: { loading: boolean }) => (
   </div>
 );
 
-// Live updating date/time display for the header
-const HeaderDateTime = () => {
-  const [dateTime, setDateTime] = useState(new Date());
-  
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDateTime(new Date());
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, []);
-  
-  return (
-    <div className={styles.headerDateTime}>
-      <div className={styles.time}>{dateTime.toLocaleTimeString()}</div>
-      <div className={styles.date}>{dateTime.toLocaleDateString()}</div>
-    </div>
-  );
-};
-
 // Simple message interface
 interface Message {
   id: string;
@@ -417,6 +397,62 @@ export default function Home() {
     }
   }, []);
 
+  // Setup resizable split container
+  useEffect(() => {
+    const chatContainer = document.getElementById('chat-container');
+    const toolResultsContainer = document.querySelector(`.${styles.toolResultsContainer}`) as HTMLElement;
+    const resizeHandle = document.getElementById('resize-handle');
+    
+    if (!chatContainer || !toolResultsContainer || !resizeHandle) return;
+    
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+    let containerWidth = 0;
+    
+    const startResize = (e: MouseEvent) => {
+      isResizing = true;
+      startX = e.clientX;
+      startWidth = chatContainer.offsetWidth;
+      containerWidth = chatContainer.parentElement?.offsetWidth || 0;
+      resizeHandle.classList.add('active');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    };
+    
+    const resize = (e: MouseEvent) => {
+      if (!isResizing) return;
+      
+      const deltaX = e.clientX - startX;
+      const newWidth = ((startWidth + deltaX) / containerWidth) * 100;
+      
+      // Limit minimum and maximum widths (20% - 80%)
+      if (newWidth >= 20 && newWidth <= 80) {
+        // Update widths and handle position
+        chatContainer.style.width = `${newWidth}%`;
+        toolResultsContainer.style.width = `${100 - newWidth}%`;
+        resizeHandle.style.right = `${100 - newWidth}%`;
+      }
+    };
+    
+    const stopResize = () => {
+      isResizing = false;
+      resizeHandle.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    
+    resizeHandle.addEventListener('mousedown', startResize);
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+    
+    return () => {
+      resizeHandle.removeEventListener('mousedown', startResize);
+      document.removeEventListener('mousemove', resize);
+      document.removeEventListener('mouseup', stopResize);
+    };
+  }, []);
+
   return (
     <>
       <Head>
@@ -450,13 +486,15 @@ export default function Home() {
                   <span className={styles.disconnected}>Disconnected</span>
                 }
               </div>
-              <HeaderDateTime />
             </div>
           </div>
           
           <div className={styles.splitContainer}>
+            {/* Resize handle */}
+            <div className={styles.resizeHandle} id="resize-handle"></div>
+            
             {/* Chat container - 60% width */}
-            <div className={styles.chatContainer}>
+            <div className={styles.chatContainer} id="chat-container">
               <div className={styles.messagesList}>
                 {consolidatedMessages.map((message) => (
                   <div 
@@ -588,7 +626,6 @@ export default function Home() {
               {activeTab === 'terminal' && (
                 <div className={styles.reactTerminalContainer}>
                   <Terminal
-                    name="CyberSec Terminal"
                     colorMode={ColorMode.Dark}
                     prompt={terminalCommands.length > 0 && terminalCommands[terminalCommands.length-1]?.workingDir 
                       ? `${terminalCommands[terminalCommands.length-1].workingDir}$` 
