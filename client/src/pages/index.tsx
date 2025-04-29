@@ -9,6 +9,7 @@ import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import Terminal, { ColorMode, TerminalOutput, TerminalInput } from 'react-terminal-ui';
+import Image from "next/image";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +20,53 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// Decorative elements for cybersecurity visual effect
+const HexagonGrid = () => (
+  <div className={styles.hexGrid}></div>
+);
+
+const NetworkGraph = () => (
+  <div className={styles.networkGraph}>
+    <div className={styles.networkNode} style={{ top: '20%', left: '15%' }}></div>
+    <div className={styles.networkNode} style={{ top: '45%', left: '25%' }}></div>
+    <div className={styles.networkNode} style={{ top: '70%', left: '10%' }}></div>
+    <div className={styles.networkNode} style={{ top: '15%', left: '75%' }}></div>
+    <div className={styles.networkNode} style={{ top: '60%', left: '85%' }}></div>
+    <div className={styles.networkConnection} style={{ top: '20%', left: '15%', width: '10%', transform: 'rotate(25deg)' }}></div>
+    <div className={styles.networkConnection} style={{ top: '45%', left: '25%', width: '15%', transform: 'rotate(-10deg)' }}></div>
+    <div className={styles.networkConnection} style={{ top: '15%', left: '75%', width: '10%', transform: 'rotate(-15deg)' }}></div>
+    <div className={styles.networkConnection} style={{ top: '60%', left: '70%', width: '15%', transform: 'rotate(10deg)' }}></div>
+  </div>
+);
+
+// Radar animation that only shows when loading
+const RadarAnimation = ({ loading }: { loading: boolean }) => (
+  <div className={`${styles.radarContainer} ${loading ? styles.radarVisible : styles.radarHidden}`}>
+    <div className={styles.radarCircle}></div>
+    <div className={styles.radarSweep}></div>
+  </div>
+);
+
+// Live updating date/time display for the header
+const HeaderDateTime = () => {
+  const [dateTime, setDateTime] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDateTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+  
+  return (
+    <div className={styles.headerDateTime}>
+      <div className={styles.time}>{dateTime.toLocaleTimeString()}</div>
+      <div className={styles.date}>{dateTime.toLocaleDateString()}</div>
+    </div>
+  );
+};
 
 // Simple message interface
 interface Message {
@@ -380,6 +428,10 @@ export default function Home() {
       <div
         className={`${styles.page} ${geistSans.variable} ${geistMono.variable}`}
       >
+        <div className={styles.aiBackgroundOverlay}></div>
+        <HexagonGrid />
+        <NetworkGraph />
+        <RadarAnimation loading={loading} />
         <main className={styles.main}>
           {/* Header Bar with Status */}
           <div className={styles.headerBar}>
@@ -398,6 +450,7 @@ export default function Home() {
                   <span className={styles.disconnected}>Disconnected</span>
                 }
               </div>
+              <HeaderDateTime />
             </div>
           </div>
           
