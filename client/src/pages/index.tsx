@@ -772,13 +772,18 @@ export default function Home() {
                 <div ref={messagesEndRef} />
               </div>
               <div className={styles.inputContainer}>
+                <button className={styles.circleButton}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="var(--accent-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
                 <input
                   type="text"
                   className={styles.input}
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Enter command or ask cybersecurity question..."
+                  placeholder="Ask anything"
                   disabled={loading || !connected}
                 />
                 <button 
@@ -786,36 +791,38 @@ export default function Home() {
                   onClick={handleSendMessage}
                   disabled={loading || !connected}
                 >
-                  <svg 
-                    className={styles.sendIcon}
-                    viewBox="0 0 512 512" 
-                    width="54" 
-                    height="54" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    {/* BB-8 Body - Main circle */}
-                    <circle cx="256" cy="320" r="180" fill="#F0F0F0" className={styles.bb8Body} />
+                  <svg className={styles.sendIcon} width="40" height="40" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    {/* BB-8 Droid Body - Main sphere */}
+                    <circle cx="12" cy="15" r="7" fill="var(--background-darker)" stroke="var(--accent-color)" strokeWidth="1" className={styles.droidBody} />
+                    
+                    {/* Body Details and Panels */}
+                    <circle cx="12" cy="15" r="5.5" fill="none" stroke="var(--accent-color)" strokeWidth="0.5" strokeDasharray="1,1" className={styles.droidDetail} />
+                    <circle cx="10" cy="13" r="1" fill="var(--accent-color)" className={styles.droidPanel} />
+                    <circle cx="14" cy="16" r="1.2" fill="var(--accent-color)" className={styles.droidPanel} />
+                    <circle cx="11.5" cy="17" r="0.7" fill="var(--accent-color)" className={styles.droidPanel} />
                     
                     {/* BB-8 Head */}
-                    <circle cx="256" cy="110" r="90" fill="#F0F0F0" className={styles.bb8Head} />
+                    <circle cx="12" cy="6.5" r="3.5" fill="var(--background-darker)" stroke="var(--accent-color)" strokeWidth="1" className={styles.droidHead} />
                     
-                    {/* BB-8 Body Details - Orange accents */}
-                    <circle cx="256" cy="320" r="150" fill="none" stroke="#FF6D00" strokeWidth="8" strokeDasharray="20,20" className={styles.bb8Detail} />
-                    <circle cx="200" cy="260" r="25" fill="#FF6D00" className={styles.bb8Detail} />
-                    <circle cx="300" cy="380" r="30" fill="#FF6D00" className={styles.bb8Detail} />
-                    <circle cx="240" cy="380" r="15" fill="#FF6D00" className={styles.bb8Detail} />
+                    {/* Eye/Lens */}
+                    <circle cx="12" cy="5.5" r="1" fill="var(--accent-color)" className={styles.droidEye}>
+                      <animate attributeName="opacity" values="1;0.5;1" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="11.7" cy="5.2" r="0.3" fill="#fff" className={styles.droidEyeHighlight} />
                     
-                    {/* BB-8 Head Details */}
-                    <circle cx="256" cy="110" r="75" fill="none" stroke="#FF6D00" strokeWidth="6" className={styles.bb8Detail} />
-                    <circle cx="256" cy="110" r="60" fill="none" stroke="#888" strokeWidth="3" strokeDasharray="10,5" className={styles.bb8Detail} />
+                    {/* Antenna */}
+                    <line x1="12" y1="3" x2="12" y2="4" stroke="var(--accent-color)" strokeWidth="0.5" className={styles.droidAntenna} />
+                    <circle cx="12" cy="2.8" r="0.4" fill="var(--accent-color)" className={styles.droidAntennaTop} />
                     
-                    {/* BB-8 Eye */}
-                    <circle cx="256" cy="80" r="15" fill="#333" className={styles.bb8Eye} />
-                    <circle cx="252" cy="76" r="5" fill="#FFF" className={styles.bb8Highlight} />
+                    {/* Head Details */}
+                    <path d="M10 7 A 2 2 0 0 0 14 7" stroke="var(--accent-color)" strokeWidth="0.5" fill="none" className={styles.droidHeadDetail} />
+                    <rect x="11" y="7.5" width="2" height="0.5" fill="var(--accent-color)" className={styles.droidHeadDetail} />
                     
-                    {/* BB-8 Antennas */}
-                    <line x1="256" y1="30" x2="256" y2="55" stroke="#444" strokeWidth="5" className={styles.bb8Antenna} />
-                    <circle cx="256" cy="25" r="8" fill="#444" className={styles.bb8Antenna} />
+                    {/* Connection between head and body (neck) */}
+                    <rect x="11.25" y="8" width="1.5" height="3" fill="var(--background-darker)" stroke="var(--accent-color)" strokeWidth="0.5" className={styles.droidNeck} />
+                    
+                    {/* Ground shadow */}
+                    <ellipse cx="12" cy="22" rx="5" ry="1" opacity="0.2" fill="var(--accent-color)" className={styles.droidShadow} />
                   </svg>
                 </button>
               </div>

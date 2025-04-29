@@ -516,51 +516,73 @@
 
 .inputContainer {
   display: flex;
-  padding: 16px;
+  padding: 8px 16px;
   border-top: 1px solid var(--border-color);
-  background-color: rgba(8, 13, 24, 0.95);
+  background-color: var(--card-bg-dark);
   position: relative;
   z-index: 2;
+  align-items: center;
+  border-radius: 24px;
+  margin: 10px 20px;
+  height: 56px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), var(--border-glow);
 }
 
 .input {
   flex: 1;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background-color: rgba(6, 11, 20, 0.7);
+  border: none;
+  background-color: transparent;
   color: var(--text-light);
   font-family: var(--font-geist-sans);
-  font-size: 1.4rem;
-  transition: all 0.3s ease;
+  font-size: 1rem;
+  height: 40px;
+  outline: none;
+  margin: 0 10px;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--primary-color);
 }
 
-.sendButton {
-  margin-left: 12px;
-  background-color: transparent;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 0 20px;
-  height: 70px;  /* Increased height */
-  width: 70px;   /* Added width */
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.circleButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: rgba(0, 178, 255, 0.1);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  overflow: visible;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.circleButton:hover {
+  background-color: rgba(0, 178, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 242, 255, 0.3);
+}
+
+.sendButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 10px;
 }
 
 .sendButton:hover {
-  background-color: transparent;
   transform: translateY(-2px);
 }
 
@@ -569,94 +591,103 @@
 }
 
 .sendIcon {
-  width: 65px;  /* Much larger icon */
-  height: 65px; /* Much larger icon */
-  position: relative;
-  z-index: 2;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.3));
+  width: 20px;
+  height: 20px;
 }
 
 .sendIcon path, .sendIcon polygon {
-  fill: #fff;
+  fill: #1a1a1a;
 }
 
-/* BB-8 specific styles */
-.bb8Body {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+/* Star Wars Droid animation styles */
+.droidBody {
+  filter: drop-shadow(0 0 3px rgba(0, 242, 255, 0.2));
 }
 
-.bb8Head {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
-  animation: bb8HeadMovement 3s ease-in-out infinite;
+.droidHead {
+  animation: droidHeadMovement 3s ease-in-out infinite;
   transform-origin: center bottom;
+  filter: drop-shadow(0 0 3px rgba(0, 242, 255, 0.2));
 }
 
-.bb8Detail {
-  animation: bb8Glow 2s infinite;
+.droidPanel {
+  animation: droidPanelGlow 2s infinite alternate;
 }
 
-.bb8Eye {
-  filter: drop-shadow(0 0 2px rgba(51, 51, 51, 0.8));
-  animation: bb8Blink 4s infinite;
+.droidEye {
+  filter: drop-shadow(0 0 4px rgba(0, 242, 255, 0.5));
+  animation: droidEyeBlink 4s infinite;
 }
 
-.bb8Antenna {
-  animation: bb8AntennaMovement 2s ease-in-out infinite;
+.droidAntenna {
+  animation: droidAntennaMovement 1.5s ease-in-out infinite;
   transform-origin: bottom center;
 }
 
-.bb8Highlight {
-  animation: bb8Shine 3s infinite;
+.droidHeadDetail {
+  animation: droidDetailPulse 3s infinite;
 }
 
-@keyframes bb8HeadMovement {
-  0% { transform: rotate(-2deg) translateY(0); }
-  50% { transform: rotate(3deg) translateY(-3px); }
-  100% { transform: rotate(-2deg) translateY(0); }
+.droidShadow {
+  animation: droidShadowPulse 3s infinite;
 }
 
-@keyframes bb8Glow {
-  0% { filter: drop-shadow(0 0 2px rgba(255, 109, 0, 0.7)); }
-  50% { filter: drop-shadow(0 0 5px rgba(255, 109, 0, 0.9)); }
-  100% { filter: drop-shadow(0 0 2px rgba(255, 109, 0, 0.7)); }
+@keyframes droidHeadMovement {
+  0% { transform: rotate(-3deg) translateY(0); }
+  50% { transform: rotate(3deg) translateY(-0.5px); }
+  100% { transform: rotate(-3deg) translateY(0); }
 }
 
-@keyframes bb8Blink {
-  0%, 48%, 52%, 100% { transform: scale(1); }
-  50% { transform: scale(0.7); }
+@keyframes droidPanelGlow {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; filter: drop-shadow(0 0 3px rgba(0, 242, 255, 0.6)); }
 }
 
-@keyframes bb8AntennaMovement {
+@keyframes droidEyeBlink {
+  0%, 45%, 55%, 100% { transform: scale(1); }
+  50% { transform: scale(0.8); }
+}
+
+@keyframes droidAntennaMovement {
   0% { transform: rotate(-5deg); }
   50% { transform: rotate(5deg); }
   100% { transform: rotate(-5deg); }
 }
 
-@keyframes bb8Shine {
+@keyframes droidDetailPulse {
   0% { opacity: 0.7; }
   50% { opacity: 1; }
   100% { opacity: 0.7; }
 }
 
-/* Button hover effects for BB-8 */
-.sendButton:hover .bb8Head {
-  animation: bb8Excited 0.5s ease-in-out infinite;
+@keyframes droidShadowPulse {
+  0% { opacity: 0.15; transform: scaleX(0.95); }
+  50% { opacity: 0.2; transform: scaleX(1.05); }
+  100% { opacity: 0.15; transform: scaleX(0.95); }
 }
 
-.sendButton:hover .bb8Detail {
-  animation: bb8GlowBright 0.5s infinite;
+/* Hover effects for droid */
+.sendButton:hover .droidHead {
+  animation: droidExcited 0.5s ease-in-out infinite;
 }
 
-@keyframes bb8Excited {
-  0% { transform: rotate(-5deg) translateY(-2px); }
-  50% { transform: rotate(5deg) translateY(-5px); }
-  100% { transform: rotate(-5deg) translateY(-2px); }
+.sendButton:hover .droidPanel {
+  animation: droidPanelGlowBright 0.5s infinite alternate;
 }
 
-@keyframes bb8GlowBright {
-  0% { filter: drop-shadow(0 0 5px rgba(255, 109, 0, 0.9)); }
-  50% { filter: drop-shadow(0 0 8px rgba(255, 109, 0, 1)); }
-  100% { filter: drop-shadow(0 0 5px rgba(255, 109, 0, 0.9)); }
+.sendButton:hover .droidEye {
+  filter: drop-shadow(0 0 6px rgba(0, 242, 255, 0.8));
+}
+
+@keyframes droidExcited {
+  0% { transform: rotate(-5deg) translateY(-1px); }
+  50% { transform: rotate(5deg) translateY(-2px); }
+  100% { transform: rotate(-5deg) translateY(-1px); }
+}
+
+@keyframes droidPanelGlowBright {
+  0% { opacity: 0.9; }
+  100% { opacity: 1; filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.8)); }
 }
 
 @keyframes toolPulse {
