@@ -804,11 +804,14 @@ export default function Home() {
                           }`}
                         >
                           <div className={styles.toolName}>
-                            <span className={styles.toolIcon}>🔧</span>
+                            <div className={styles.toolIcon}>
+                              {execution.status === 'completed' ? '✓' : 
+                               execution.status === 'failed' ? '✗' : '⚙️'}
+                            </div>
                             {execution.name}
                           </div>
                           <div className={styles.toolTimestamp}>
-                            {new Date(execution.startTime).toLocaleTimeString()}
+                            <span>{new Date(execution.startTime).toLocaleTimeString()}</span>
                             {execution.endTime && (
                               <span className={styles.duration}>
                                 ({((execution.endTime - execution.startTime) / 1000).toFixed(2)}s)
@@ -1117,11 +1120,14 @@ export default function Home() {
                             }`}
                           >
                             <div className={styles.toolName}>
-                              <span className={styles.toolIcon}>🔧</span>
+                              <div className={styles.toolIcon}>
+                                {execution.status === 'completed' ? '✓' : 
+                                 execution.status === 'failed' ? '✗' : '⚙️'}
+                              </div>
                               {execution.name}
                             </div>
                             <div className={styles.toolTimestamp}>
-                              {new Date(execution.startTime).toLocaleTimeString()}
+                              <span>{new Date(execution.startTime).toLocaleTimeString()}</span>
                               {execution.endTime && (
                                 <span className={styles.duration}>
                                   ({((execution.endTime - execution.startTime) / 1000).toFixed(2)}s)

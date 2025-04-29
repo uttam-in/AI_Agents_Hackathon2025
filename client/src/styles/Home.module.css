@@ -1070,66 +1070,115 @@
 /* Tool Execution Items */
 .toolExecutionItem {
   background-color: rgba(0, 223, 255, 0.05);
-  border-radius: 6px;
-  padding: 12px;
-  border-left: 3px solid var(--accent-color);
-  transition: all 0.2s ease;
-  margin-bottom: 0;
+  border-radius: 10px;
+  padding: 16px;
+  border-left: 4px solid var(--accent-color);
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0, 178, 255, 0.1);
+  overflow: hidden;
 }
 
 .toolExecutionItem:hover {
-  background-color: rgba(0, 223, 255, 0.1);
+  background-color: rgba(0, 223, 255, 0.15);
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 223, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 223, 255, 0.25);
+}
+
+.toolExecutionItem::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0, 223, 255, 0.03) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 .runningTool {
   border-left-color: #ffcc00;
+  background-color: rgba(255, 204, 0, 0.05);
+}
+
+.runningTool::before {
+  background: linear-gradient(90deg, rgba(255, 204, 0, 0.03) 0%, transparent 100%);
 }
 
 .completedTool {
   border-left-color: #00ff88;
+  background-color: rgba(0, 255, 136, 0.05);
+}
+
+.completedTool::before {
+  background: linear-gradient(90deg, rgba(0, 255, 136, 0.03) 0%, transparent 100%);
 }
 
 .failedTool {
   border-left-color: #ff4444;
+  background-color: rgba(255, 68, 68, 0.05);
+}
+
+.failedTool::before {
+  background: linear-gradient(90deg, rgba(255, 68, 68, 0.03) 0%, transparent 100%);
 }
 
 .toolName {
-  font-weight: bold;
-  font-size: 13px;
-  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  color: var(--text-light);
 }
 
 .toolIcon {
-  font-size: 16px;
+  font-size: 18px;
+  background: rgba(0, 178, 255, 0.15);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 8px rgba(0, 178, 255, 0.2);
 }
 
 .toolTimestamp {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
 }
 
 .duration {
-  margin-left: 5px;
+  margin-left: 8px;
   font-style: italic;
+  color: var(--accent-color);
+  background: rgba(0, 178, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
 }
 
 .toolStatus {
-  font-size: 11px;
+  font-size: 12px;
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-weight: 500;
 }
 
 .runningStatus {
-  color: #ffcc00;
+  color: #000;
   display: flex;
   align-items: center;
+  background-color: rgba(255, 204, 0, 0.8);
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.3);
 }
 
 .runningStatus::after {
@@ -1144,69 +1193,75 @@
 }
 
 .completedStatus {
-  color: #00ff88;
+  color: #000;
+  background-color: rgba(0, 255, 136, 0.7);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
 }
 
 .failedStatus {
-  color: #ff4444;
+  color: #fff;
+  background-color: rgba(255, 68, 68, 0.7);
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
 }
 
 .toolParameters {
-  margin-top: 5px;
+  margin-top: 12px;
   font-size: 12px;
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 178, 255, 0.1);
 }
 
 .toolParameters details {
-  padding: 5px 0;
+  padding: 0;
 }
 
 .toolParameters summary {
   cursor: pointer;
   color: var(--accent-color);
-  font-size: 11px;
-}
-
-.toolParameters pre {
-  margin: 5px 0;
-  padding: 5px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-  font-size: 11px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  color: #ddd;
-  max-height: 100px;
-  overflow-y: auto;
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.3; }
-  100% { opacity: 1; }
-}
-
-/* Tool History Button in Header */
-.toolHistoryToggle {
-  margin-left: 15px;
-  position: relative;
-}
-
-.historyButton {
-  background-color: rgba(0, 223, 255, 0.1);
-  border: 1px solid var(--accent-color);
-  color: var(--accent-color);
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 4px;
-  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 12px;
+  background-color: rgba(0, 178, 255, 0.05);
+  display: flex;
+  align-items: center;
   transition: all 0.2s ease;
 }
 
-.historyButton:hover {
-  background-color: rgba(0, 223, 255, 0.2);
+.toolParameters summary:hover {
+  background-color: rgba(0, 178, 255, 0.1);
 }
 
-.activeButton {
-  background-color: rgba(0, 223, 255, 0.3);
-  box-shadow: 0 0 5px var(--accent-color);
+.toolParameters summary::before {
+  content: "⚙️";
+  margin-right: 6px;
+  font-size: 10px;
+}
+
+.toolParameters pre {
+  margin: 0;
+  padding: 10px 12px;
+  background-color: rgba(0, 0, 0, 0.2);
+  font-size: 11px;
+  font-family: var(--font-geist-mono);
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #ddd;
+  max-height: 150px;
+  overflow-y: auto;
+  border-top: 1px solid rgba(0, 178, 255, 0.1);
+}
+
+.toolParameters pre::-webkit-scrollbar {
+  width: 4px;
+}
+
+.toolParameters pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toolParameters pre::-webkit-scrollbar-thumb {
+  background-color: var(--accent-color);
+  border-radius: 2px;
 }
