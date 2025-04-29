@@ -58,6 +58,7 @@ active_tools = {}  # Track active tools
 
 # Function to create a plugin wrapper that tracks tool usage
 def create_tracking_wrapper(plugin, plugin_name, sid):
+    print(f"Creating tracking wrapper for plugin: {plugin_name}")
     """Create a wrapper around plugin functions to track when they're called"""
     global current_sid
     current_sid = sid
