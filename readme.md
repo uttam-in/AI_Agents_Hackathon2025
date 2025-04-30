@@ -1,4 +1,4 @@
-# AI Agents Hackathon 2025 - CyberSecurity Agent
+# R2D2 AI Agents Hackathon 2025 - CyberSecurity Agent
 
 An advanced AI-powered cybersecurity assistant with integrated security tools and a modern React interface.
 
