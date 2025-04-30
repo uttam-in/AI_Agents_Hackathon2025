@@ -81,6 +81,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                     def sync_emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
                         """Synchronous helper function to emit tool events directly"""
                         try:
+                            print(f"Emitting {event_type} event for tool: {tool_name} with status: {status}")
                             loop = asyncio.get_event_loop()
                             if event_type == 'tool_usage':
                                 # Legacy format
