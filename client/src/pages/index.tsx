@@ -762,7 +762,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Jedi</title>
+        <title>R2D2</title>
         <meta name="description" content="Advanced Cybersecurity AI Agent Interface" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -782,7 +782,7 @@ export default function Home() {
           <div className={styles.headerBar}>
             <div className={styles.logoContainer}>
               <LightsaberLogo />
-              <h1 className={styles.title}>Jedi</h1>
+              <h1 className={styles.title}>R2D2</h1>
             </div>
             <div className={styles.statusBar}>
               <div className={styles.statusItem}>
