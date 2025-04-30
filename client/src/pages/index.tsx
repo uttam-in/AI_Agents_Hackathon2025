@@ -142,6 +142,26 @@ export default function Home() {
   // Current assistant message being streamed
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState<Message | null>(null);
 
+  // Audio player reference
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Function to play random AI response sound
+  const playRandomAISound = () => {
+    const sounds = [
+      '/audios/droid-alien-03-117658.mp3',
+      '/audios/r2d2-message-101soundboards.mp3',
+      '/audios/r2d203-101soundboards.mp3',
+      '/audios/processing-r2d2-101soundboards.mp3'
+    ];
+    const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
+    
+    if (audioRef.current) {
+      audioRef.current.src = randomSound;
+      audioRef.current.volume = 0.5; // Set to 50% volume
+      audioRef.current.play().catch(e => console.error('Audio playback failed:', e));
+    }
+  };
+
   // Tool results state
   const [toolResults, setToolResults] = useState<{
     title: string;
@@ -193,6 +213,9 @@ export default function Home() {
     // Event for starting a new response message
     socketInstance.on("new_response", (data) => {
       console.log("New response:", data);
+      // Play a random sound when AI starts responding
+      playRandomAISound();
+      
       const newMessage: Message = {
         id: Date.now().toString(),
         type: 'assistant',
@@ -747,6 +770,9 @@ export default function Home() {
       <div
         className={`${styles.page} ${geistSans.variable} ${geistMono.variable}`}
       >
+        {/* Hidden audio element for playing sounds */}
+        <audio ref={audioRef} style={{ display: 'none' }} />
+        
         <div className={styles.aiBackgroundOverlay}></div>
         <HexagonGrid />
         <NetworkGraph />
