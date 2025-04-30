@@ -1030,11 +1030,8 @@ export default function Home() {
                       }
                       return true; // Returns true to indicate the command was handled
                     }}
-                  >
-                    <TerminalOutput>Welcome to the CyberSec Terminal. Type commands to interact with the server.</TerminalOutput>
-                    <TerminalOutput>Type 'help' for available commands or use any standard Unix/Linux command.</TerminalOutput>
+                  >                                        
                     <TerminalOutput>Connected: {connected ? 'Yes ✓' : 'No ✗'}</TerminalOutput>
-                    <TerminalOutput>---</TerminalOutput>
                     
                     {terminalCommands.map((cmd) => (
                       <React.Fragment key={cmd.id}>
