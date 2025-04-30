@@ -75,8 +75,10 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
             if callable(attr) and hasattr(attr, 'kernel_function'):
                 original_method = attr
                 
-                # Create a wrapper function
-                def make_wrapper(method_name, orig_method):
+                # Create a wrapper function - using a function factory pattern to capture the current values
+                def create_wrapper(current_method_name, current_orig_method):
+                    print(f"Creating wrapper for {plugin_name}.{current_method_name}")
+                    
                     # Define a synchronous version of the emit function that uses the event loop
                     def sync_emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
                         """Synchronous helper function to emit tool events directly"""
@@ -132,20 +134,20 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                     
                     def wrapper(*args, **kwargs):
                         # Get the friendly tool name
-                        tool_name = get_friendly_tool_name(plugin_name, method_name)
+                        tool_name = get_friendly_tool_name(plugin_name, current_method_name)
                         
                         # Highly visible output for tool selection
                         if tool_name:
                             print(f"\n{'='*50}")
                             print(f"🔧 TOOL SELECTED BY LLM: '{tool_name}'")
-                            print(f"📝 PLUGIN: {plugin_name} → FUNCTION: {method_name}")
+                            print(f"📝 PLUGIN: {plugin_name} → FUNCTION: {current_method_name}")
                             print(f"{'='*50}\n")
                         
                         # Capture parameters for logging
                         parameters_dict = {}
                         # Get positional args from the original function signature
-                        if hasattr(orig_method, '__code__'):
-                            param_names = orig_method.__code__.co_varnames[:orig_method.__code__.co_argcount]
+                        if hasattr(current_orig_method, '__code__'):
+                            param_names = current_orig_method.__code__.co_varnames[:current_orig_method.__code__.co_argcount]
                             # Skip 'self' parameter if it's the first one
                             if param_names and param_names[0] == 'self':
                                 param_names = param_names[1:]
@@ -197,7 +199,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                         
                         try:
                             # Call the original method
-                            result = orig_method(*args, **kwargs)
+                            result = current_orig_method(*args, **kwargs)
                             
                             # Log successful completion
                             if tool_name:
@@ -239,8 +241,8 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                     
                     return wrapper
                 
-                # Replace the original method with our wrapper
-                setattr(plugin, attr_name, make_wrapper(attr_name, original_method))
+                # Replace the original method with our wrapper, using the factory to preserve context
+                setattr(plugin, attr_name, create_wrapper(attr_name, original_method))
         except Exception as e:
             print(f"Error wrapping method {attr_name}: {str(e)}")
             traceback.print_exc()  # Print traceback for debugging
