@@ -1,7 +1,6 @@
 import Head from "next/head";
 import { Geist, Geist_Mono } from "next/font/google";
 import styles from "@/styles/Home.module.css";
-import { ChainlitContext } from "@chainlit/react-client";
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import ReactMarkdown from 'react-markdown';
@@ -124,7 +123,6 @@ interface ToolExecution {
 
 export default function Home() {
   // Get the client from the context (already initialized in _app.tsx)
-  const client = useContext(ChainlitContext);
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [loading, setLoading] = useState(false);
