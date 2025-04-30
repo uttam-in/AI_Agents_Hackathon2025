@@ -868,3 +868,191 @@
     transform: scale(1);
   }
 }
+
+/* Tool History & Query History styling */
+.toolHistoryContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 6px;
+  max-height: 80vh; /* Increased max-height to allow more content while ensuring scrollability */
+  overflow-y: scroll; /* Changed from auto to scroll to always show scrollbar */
+  background-color: var(--background-darker);
+  border-radius: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.toolHistoryContent::-webkit-scrollbar {
+  width: 8px; /* Increased width for better visibility and usability */
+}
+
+.toolHistoryContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toolHistoryContent::-webkit-scrollbar-thumb {
+  background-color: var(--accent-color);
+  border-radius: 4px;
+  opacity: 0.7; /* Increased opacity for better visibility */
+}
+
+.toolHistoryContent::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary-color);
+}
+
+.toolHistorySidebar {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 350px;
+  height: 100%;
+  background-color: var(--background-darker);
+  border-left: 1px solid var(--border-color);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.toolHistoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--card-bg-dark);
+}
+
+.toolHistoryHeader h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 1.2rem;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--accent-color);
+}
+
+.toolHistoryList {
+  flex: 1;
+  overflow-y: scroll; /* Changed from auto to scroll to always show scrollbar */
+  padding: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) transparent; /* Changed to accent color for consistency */
+  max-height: calc(100vh - 60px); /* Ensure it doesn't overflow the viewport */
+}
+
+.toolHistoryList::-webkit-scrollbar {
+  width: 8px; /* Increased width for better visibility and usability */
+}
+
+.toolHistoryList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toolHistoryList::-webkit-scrollbar-thumb {
+  background-color: var(--accent-color);
+  border-radius: 4px;
+  opacity: 0.7; /* Increased opacity for better visibility */
+}
+
+.toolHistoryList::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary-color);
+}
+
+/* Add styling to ensure the parameters section scrolls properly */
+.toolParameters {
+  margin-top: 8px;
+  font-family: var(--font-geist-mono);
+  font-size: 0.75rem;
+}
+
+.toolParameters summary {
+  cursor: pointer;
+  color: var(--accent-color);
+  font-size: 0.8rem;
+  padding: 4px 0;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+
+.toolParameters summary::before {
+  content: "↳";
+  margin-right: 6px;
+  transform: rotate(0);
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.toolParameters[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.toolParameters pre {
+  background-color: rgba(5, 9, 19, 0.9);
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 6px;
+  overflow-x: auto;
+  color: var(--terminal-text);
+  border-left: 2px solid var(--accent-color);
+  max-height: 150px; /* Increased height for more content visibility */
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-color) rgba(5, 9, 19, 0.5);
+}
+
+.toolParameters pre::-webkit-scrollbar {
+  width: 8px;
+}
+
+.toolParameters pre::-webkit-scrollbar-thumb {
+  background-color: var(--accent-color);
+  border-radius: 4px;
+}
+
+.toolParameters pre::-webkit-scrollbar-track {
+  background-color: rgba(5, 9, 19, 0.5);
+}
+
+/* Ensure proper scrolling at different screen sizes */
+@media (max-width: 1200px) {
+  .toolHistoryList, .toolHistoryContent {
+    max-height: 50vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .toolHistoryList, .toolHistoryContent {
+    max-height: 40vh;
+  }
+  
+  .toolHistorySidebar {
+    width: 300px; /* Smaller width on mobile devices */
+  }
+}
