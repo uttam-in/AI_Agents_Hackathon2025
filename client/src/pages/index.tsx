@@ -148,7 +148,6 @@ export default function Home() {
   // Function to play random AI response sound
   const playRandomAISound = () => {
     const sounds = [
-      '/audios/droid-alien-03-117658.mp3',
       '/audios/r2d2-message-101soundboards.mp3',
       '/audios/r2d203-101soundboards.mp3',
       '/audios/processing-r2d2-101soundboards.mp3'
