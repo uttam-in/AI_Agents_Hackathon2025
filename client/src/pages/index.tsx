@@ -131,7 +131,7 @@ export default function Home() {
   // Terminal related states
   const [terminalCommands, setTerminalCommands] = useState<TerminalCommand[]>([]);
   const [terminalInput, setTerminalInput] = useState("");
-  const [activeTab, setActiveTab] = useState<'analysis' | 'terminal' | 'toolhistory'>('analysis');
+  const [activeTab, setActiveTab] = useState<'terminal' | 'queryhistory'>('terminal');
   const [terminalProcessing, setTerminalProcessing] = useState(false);
   
   // Current assistant message being streamed
@@ -980,58 +980,18 @@ export default function Home() {
               {/* Tab navigation */}
               <div className={styles.tabsContainer}>
                 <button 
-                  className={`${styles.tabButton} ${activeTab === 'analysis' ? styles.activeTab : ''}`}
-                  onClick={() => setActiveTab('analysis')}
-                >
-                  Analysis
-                </button>
-                <button 
                   className={`${styles.tabButton} ${activeTab === 'terminal' ? styles.activeTab : ''}`}
                   onClick={() => setActiveTab('terminal')}
                 >
                   Terminal
                 </button>
                 <button 
-                  className={`${styles.tabButton} ${activeTab === 'toolhistory' ? styles.activeTab : ''}`}
-                  onClick={() => setActiveTab('toolhistory')}
+                  className={`${styles.tabButton} ${activeTab === 'queryhistory' ? styles.activeTab : ''}`}
+                  onClick={() => setActiveTab('queryhistory')}
                 >
-                  Tool History
+                  Query History
                 </button>
               </div>
-
-              {/* Analysis tab content */}
-              {activeTab === 'analysis' && (
-                <>
-                  <div className={styles.toolResultsHeader}>
-                    <h2>{toolResults ? toolResults.title : 'Security Analysis'}</h2>
-                    <span>{toolResults ? new Date(toolResults.timestamp).toLocaleTimeString() : ''}</span>
-                  </div>
-                  <div className={styles.toolResultsContent}>
-                    {toolResults ? (
-                      <div className={styles.markdownContent}>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeHighlight, rehypeRaw]}
-                          components={{
-                            pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
-                            code: ({node, inline, ...props}) => 
-                              inline 
-                                ? <code className={styles.inlineCode} {...props} />
-                                : <code className={styles.code} {...props} />
-                          }}
-                        >
-                          {toolResults.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <div className={styles.noToolResults}>
-                        <p>Awaiting security tool execution...</p>
-                        <p>Use the agent to run security tools like nmap, metasploit, or other available tools.</p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
 
               {/* Terminal tab content */}
               {activeTab === 'terminal' && (
@@ -1106,17 +1066,15 @@ export default function Home() {
               )}
 
               {/* Tool History tab content */}
-              {activeTab === 'toolhistory' && (
+              {activeTab === 'queryhistory' && (
                 <>
                   <div className={styles.toolResultsHeader}>
-                    <h2>Tool Execution History</h2>
-                    <span>{toolExecutions.length} tools used</span>
+                    <h2>Query History</h2>
                   </div>
                   <div className={styles.toolResultsContent}>
                     {toolExecutions.length === 0 ? (
                       <div className={styles.noToolResults}>
-                        <p>No tools have been executed yet.</p>
-                        <p>Tool history will appear here when the agent uses tools during your conversation.</p>
+                        <p>No queries have been executed yet.</p>                        
                       </div>
                     ) : (
                       <div className={styles.toolHistoryContent}>
