@@ -818,15 +818,19 @@
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  position: relative;
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 2;
-  flex-shrink: 0;
-  margin: 0 10px;
-  position: relative; /* Changed from static to relative to position the glow effect */
+  align-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: visible;
+  margin-right: 10px;
+}
+
+.avatar.activeGlow {
+  animation: pulse 0.8s infinite;
 }
 
 .avatarGlow {
@@ -834,454 +838,33 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  animation: avatarPulse 3s infinite;
-  pointer-events: none;
+  z-index: -1;
 }
 
-.userAvatarImage,
-.aiAvatarImage {
-  width: 40px;
-  height: 40px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
+.avatarGlow.activeGlowEffect {
+  box-shadow: 0 0 15px 5px var(--accent-color);
+  animation: glowPulse 0.8s infinite alternate;
 }
 
-.userAvatarImage {
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 10px 2px var(--accent-color);
+    opacity: 0.5;
+  }
+  100% {
+    box-shadow: 0 0 20px 8px var(--accent-color);
+    opacity: 0.8;
+  }
 }
 
-.aiAvatarImage {
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-/* Enhanced glow effects */
-.userMessage .avatarGlow,
-.assistantMessage .avatarGlow {
-  box-shadow: none;
-  border: none;
-}
-
-@keyframes avatarPulse {
-  0% { opacity: 0.7; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(1.2); }
-  100% { opacity: 0.7; transform: scale(1); }
-}
-
-.lightsaberLogo {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin-right: 12px;
-  filter: drop-shadow(0 0 10px rgba(0, 178, 255, 0.5));
-}
-
-.lightsaberHandle {
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
-}
-
-.lightsaberBlade {
-  filter: drop-shadow(0 0 8px rgba(0, 219, 255, 0.7));
-  transform-origin: 50% 60%;
-  animation: lightsaberSway 6s ease-in-out infinite;
-}
-
-.lightsaberStrike {
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
-}
-
-@keyframes lightsaberSway {
-  0% { transform: rotate(-2deg); }
-  25% { transform: rotate(3deg); }
-  50% { transform: rotate(-1deg); }
-  75% { transform: rotate(2deg); }
-  100% { transform: rotate(-2deg); }
-}
-
-/* Active tools display */
-.activeToolsDisplay {
-  display: none; /* Hide the floating box that appears during tool execution */
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  background-color: rgba(8, 13, 24, 0.85);
-  border: 1px solid var(--border-color);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-  box-shadow: var(--border-glow), 0 4px 15px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  backdrop-filter: blur(5px);
-  max-width: 80%;
-  min-width: 300px;
-  animation: slideDown 0.3s ease-out;
-}
-
-.activeToolsHeader {
-  padding: 10px 16px;
-  background-color: rgba(0, 162, 255, 0.1);
-  border-bottom: 1px solid var(--border-color);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--accent-color);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.activeToolsList {
-  padding: 10px 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  max-width: 100%;
-}
-
-.activeTool {
-  background-color: rgba(0, 178, 255, 0.15);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 5px 12px;
-  font-size: 0.85rem;
-  color: var(--text-light);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 0 8px rgba(0, 178, 255, 0.2);
-  animation: toolAppear 0.3s ease-out;
-}
-
-.pulsingDot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--accent-color);
-  animation: toolPulse 1.5s infinite;
-}
-
-@keyframes toolAppear {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slideDown {
-  from { transform: translate(-50%, -20px); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
-
-/* Tool History Sidebar */
-.toolHistorySidebar {
-  position: absolute;
-  top: 80px;
-  right: 0;
-  width: 300px;
-  height: calc(100vh - 80px);
-  background-color: var(--background-darker);
-  border-left: 1px solid var(--accent-color);
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: -2px 0 10px rgba(0, 223, 255, 0.1);
-  animation: slideInRight 0.3s ease-out;
-}
-
-@keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-
-.toolHistoryHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: rgba(0, 223, 255, 0.1);
-  border-bottom: 1px solid var(--accent-color);
-}
-
-.toolHistoryHeader h3 {
-  margin: 0;
-  font-size: 14px;
-  color: var(--accent-color);
-}
-
-.closeButton {
-  background: none;
-  border: none;
-  color: var(--accent-color);
-  font-size: 20px;
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin: 0;
-  transition: color 0.2s, transform 0.2s;
-}
-
-.closeButton:hover {
-  color: #fff;
-  transform: scale(1.1);
-}
-
-.toolHistoryList {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--accent-color) var(--background-darker);
-}
-
-.toolHistoryList::-webkit-scrollbar {
-  width: 6px;
-}
-
-.toolHistoryList::-webkit-scrollbar-track {
-  background: var(--background-darker);
-}
-
-.toolHistoryList::-webkit-scrollbar-thumb {
-  background-color: var(--accent-color);
-  border-radius: 3px;
-}
-
-.noHistory {
-  text-align: center;
-  color: var(--text-secondary);
-  margin-top: 20px;
-  font-size: 14px;
-  font-style: italic;
-}
-
-/* Tool Execution Items */
-.toolExecutionItem {
-  background-color: rgba(0, 223, 255, 0.05);
-  border-radius: 10px;
-  padding: 16px;
-  border-left: 4px solid var(--accent-color);
-  transition: all 0.3s ease;
-  margin-bottom: 10px;
-  position: relative;
-  box-shadow: 0 1px 4px rgba(0, 178, 255, 0.1);
-  overflow: hidden;
-}
-
-.toolExecutionItem:hover {
-  background-color: rgba(0, 223, 255, 0.15);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 223, 255, 0.25);
-}
-
-.toolExecutionItem::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(0, 223, 255, 0.03) 0%, transparent 100%);
-  pointer-events: none;
-}
-
-.runningTool {
-  border-left-color: #ffcc00;
-  background-color: rgba(255, 204, 0, 0.05);
-}
-
-.runningTool::before {
-  background: linear-gradient(90deg, rgba(255, 204, 0, 0.03) 0%, transparent 100%);
-}
-
-.completedTool {
-  border-left-color: #00ff88;
-  background-color: rgba(0, 255, 136, 0.05);
-}
-
-.completedTool::before {
-  background: linear-gradient(90deg, rgba(0, 255, 136, 0.03) 0%, transparent 100%);
-}
-
-.failedTool {
-  border-left-color: #ff4444;
-  background-color: rgba(255, 68, 68, 0.05);
-}
-
-.failedTool::before {
-  background: linear-gradient(90deg, rgba(255, 68, 68, 0.03) 0%, transparent 100%);
-}
-
-.toolName {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-light);
-}
-
-.toolIcon {
-  font-size: 18px;
-  background: rgba(0, 178, 255, 0.15);
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 8px rgba(0, 178, 255, 0.2);
-}
-
-.toolTimestamp {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-}
-
-.duration {
-  margin-left: 8px;
-  font-style: italic;
-  color: var(--accent-color);
-  background: rgba(0, 178, 255, 0.1);
-  padding: 2px 6px;
-  border-radius: 10px;
-}
-
-.toolStatus {
-  font-size: 12px;
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 3px 10px;
-  border-radius: 10px;
-  font-weight: 500;
-}
-
-.runningStatus {
-  color: #000;
-  display: flex;
-  align-items: center;
-  background-color: rgba(255, 204, 0, 0.8);
-  box-shadow: 0 0 8px rgba(255, 204, 0, 0.3);
-}
-
-.runningStatus::after {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background-color: #ffcc00;
-  border-radius: 50%;
-  margin-left: 5px;
-  animation: pulse 1.5s infinite;
-}
-
-.completedStatus {
-  color: #000;
-  background-color: rgba(0, 255, 136, 0.7);
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
-}
-
-.failedStatus {
-  color: #fff;
-  background-color: rgba(255, 68, 68, 0.7);
-  box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
-}
-
-.toolParameters {
-  margin-top: 12px;
-  font-size: 12px;
-  background-color: rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 178, 255, 0.1);
-}
-
-.toolParameters details {
-  padding: 0;
-}
-
-.toolParameters summary {
-  cursor: pointer;
-  color: var(--accent-color);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 8px 12px;
-  background-color: rgba(0, 178, 255, 0.05);
-  display: flex;
-  align-items: center;
-  transition: all 0.2s ease;
-}
-
-.toolParameters summary:hover {
-  background-color: rgba(0, 178, 255, 0.1);
-}
-
-.toolParameters summary::before {
-  content: "⚙️";
-  margin-right: 6px;
-  font-size: 10px;
-}
-
-.toolParameters pre {
-  margin: 0;
-  padding: 10px 12px;
-  background-color: rgba(0, 0, 0, 0.2);
-  font-size: 11px;
-  font-family: var(--font-geist-mono);
-  white-space: pre-wrap;
-  word-break: break-all;
-  color: #ddd;
-  max-height: 150px;
-  overflow-y: auto;
-  border-top: 1px solid rgba(0, 178, 255, 0.1);
-}
-
-.toolParameters pre::-webkit-scrollbar {
-  width: 4px;
-}
-
-.toolParameters pre::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.toolParameters pre::-webkit-scrollbar-thumb {
-  background-color: var(--accent-color);
-  border-radius: 2px;
-}
-
-.pluginBadge {
-  font-size: 0.7rem;
-  margin-left: 8px;
-  padding: 2px 6px;
-  background-color: rgba(0, 242, 255, 0.15);
-  border: 1px solid rgba(0, 242, 255, 0.4);
-  color: #00f2ff;
-  border-radius: 4px;
-  display: inline-block;
-  vertical-align: middle;
-  box-shadow: 0 0 4px rgba(0, 242, 255, 0.3);
-  animation: pulseBadge 2s infinite;
-}
-
-@keyframes pulseBadge {
-  0% { box-shadow: 0 0 4px rgba(0, 242, 255, 0.3); }
-  50% { box-shadow: 0 0 8px rgba(0, 242, 255, 0.6); }
-  100% { box-shadow: 0 0 4px rgba(0, 242, 255, 0.3); }
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

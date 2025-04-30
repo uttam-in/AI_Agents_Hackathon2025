@@ -41,6 +41,11 @@ const NetworkGraph = () => (
 );
 
 // Anime-style Avatar components for the chat
+interface AvatarProps {
+  loading?: boolean;
+  isCurrentMessage?: boolean;
+}
+
 const UserAvatar = () => (
   <div className={styles.avatar}>
     <div className={styles.userAvatarImage}>
@@ -55,8 +60,8 @@ const UserAvatar = () => (
   </div>
 );
 
-const AIAvatar = () => (
-  <div className={styles.avatar}>
+const AIAvatar = ({ loading, isCurrentMessage }: AvatarProps) => (
+  <div className={`${styles.avatar} ${loading && isCurrentMessage ? styles.activeGlow : ''}`}>
     <div className={styles.aiAvatarImage}>
       <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="50" height="50">
         <path fill="#00f2ff" d="M469.213,415.183V199.845c0-19.814-16.075-35.89-35.89-35.89h-35.89v35.89v35.89v179.448l-35.89,89.725h143.559 L469.213,415.183z"/>
@@ -65,7 +70,7 @@ const AIAvatar = () => (
         <path fill="#00f2ff" d="M379.488,163.955H128.261v251.228l35.89,35.89h179.448l35.89-35.89V163.955z M307.709,307.514H200.04 c-9.918,0-17.945-8.025-17.945-17.944s8.026-17.945,17.945-17.945h107.669c9.919,0,17.945,8.026,17.945,17.945 S317.628,307.514,307.709,307.514 M307.709,235.734H200.04c-9.918,0-17.945-8.038-17.945-17.945c0-9.907,8.026-17.945,17.945-17.945 h107.669c9.919,0,17.945,8.038,17.945,17.945C325.654,227.697,317.628,235.734,307.709,235.734"/>
       </svg>
     </div>
-    <div className={styles.avatarGlow}></div>
+    <div className={`${styles.avatarGlow} ${loading && isCurrentMessage ? styles.activeGlowEffect : ''}`}></div>
   </div>
 );
 
@@ -169,6 +174,10 @@ export default function Home() {
     const socketInstance = io("http://192.168.254.179:8000", {
       transports: ["websocket"],
       autoConnect: true,
+      timeout: 120000,  // Increase timeout to 60 seconds (from default 20s)
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
     });
 
     socketInstance.on("connect", () => {
@@ -763,24 +772,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className={styles.splitContainer}>
-            {/* Active Tools Display */}
-            {activeTools.length > 0 && (
-              <div className={styles.activeToolsDisplay}>
-                <div className={styles.activeToolsHeader}>
-                  <span>🛠️ Tools in use:</span>
-                </div>
-                <div className={styles.activeToolsList}>
-                  {activeTools.map((tool, index) => (
-                    <div key={`tool-${index}`} className={styles.activeTool}>
-                      <span className={styles.pulsingDot}></span>
-                      <span>{tool}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
+          <div className={styles.splitContainer}>            
             {/* Tool History Sidebar - Conditionally shown */}
             {showToolHistory && (
               <div className={styles.toolHistorySidebar}>
@@ -867,7 +859,13 @@ export default function Home() {
                     }`}
                   >
                     <div className={styles.messageName} data-name={message.type === 'user' ? 'User' : 'CyberSec AI'}>
-                      {message.type === 'user' ? <UserAvatar /> : <AIAvatar />}
+                      {message.type === 'user' ? 
+                        <UserAvatar /> : 
+                        <AIAvatar 
+                          loading={loading} 
+                          isCurrentMessage={currentAssistantMessage ? message.id === currentAssistantMessage.id : false} 
+                        />
+                      }
                     </div>
                     <div className={`${styles.messageContent} ${
                       message.type === 'assistant' && textFormat === 'code' ? styles.codeTheme : 
@@ -884,10 +882,13 @@ export default function Home() {
                               components={{
                                 p: ({node, ...props}) => <p className={styles.paragraph} {...props} />,
                                 pre: ({node, ...props}) => <pre className={styles.codeBlock} {...props} />,
-                                code: ({node, inline, ...props}) => 
-                                  inline 
+                                code: ({node, className, ...props}: any) => {
+                                  const match = /language-(\w+)/.exec(className || '');
+                                  const isInline = !match && (props.inline || false);
+                                  return isInline 
                                     ? <code className={styles.inlineCode} {...props} />
-                                    : <code className={styles.code} {...props} />,
+                                    : <code className={styles.code} {...props} />;
+                                },
                                 h1: ({node, ...props}) => <h1 className={styles.heading} {...props} />,
                                 h2: ({node, ...props}) => <h2 className={styles.heading} {...props} />,
                                 h3: ({node, ...props}) => <h3 className={styles.heading} {...props} />,
