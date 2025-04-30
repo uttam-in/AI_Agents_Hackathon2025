@@ -6,6 +6,7 @@ import re
 import json
 import os
 import time
+import logging
 from typing import List, Dict, Any
 import uvicorn
 from fastapi import FastAPI
@@ -14,6 +15,16 @@ import asyncio
 import socketio
 import sys
 import traceback
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("cybersecurity_agent")
 
 from semantic_kernel.agents import ChatCompletionAgent, ChatHistoryAgentThread
 from terminal_plugin.src.terminal_tools import TerminalTools
@@ -58,7 +69,7 @@ active_tools = {}  # Track active tools
 
 # Function to create a plugin wrapper that tracks tool usage
 def create_tracking_wrapper(plugin, plugin_name, sid):
-    print(f"Creating tracking wrapper for plugin: {plugin_name}")
+    logger.info(f"Creating tracking wrapper for plugin: {plugin_name}")
     """Create a wrapper around plugin functions to track when they're called"""
     global current_sid
     current_sid = sid
@@ -77,13 +88,13 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                 
                 # Create a wrapper function - using a function factory pattern to capture the current values
                 def create_wrapper(current_method_name, current_orig_method):
-                    print(f"Creating wrapper for {plugin_name}.{current_method_name}")
+                    logger.info(f"Creating wrapper for {plugin_name}.{current_method_name}")
                     
                     # Define a synchronous version of the emit function that uses the event loop
                     def sync_emit_tool_event(event_type, tool_name, status, tool_id=None, parameters=None, error=None, duration=None):
                         """Synchronous helper function to emit tool events directly"""
                         try:
-                            print(f"Emitting {event_type} event for tool: {tool_name} with status: {status}")
+                            logger.info(f"Emitting {event_type} event for tool: {tool_name} with status: {status}")
                             loop = asyncio.get_event_loop()
                             if event_type == 'tool_usage':
                                 # Legacy format
@@ -126,11 +137,11 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                     # If loop is not running, run the coroutine
                                     loop.run_until_complete(coroutine)
                                 
-                                # Print tool usage when emitted
-                                print(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status} - Plugin: {plugin_name}")
+                                # Log tool usage when emitted
+                                logger.info(f"🔧 TOOL SELECTED: '{tool_name}' - Status: {status} - Plugin: {plugin_name}")
                         except Exception as e:
-                            print(f"Error emitting {event_type} event: {e}")
-                            traceback.print_exc()  # Print the full traceback to help with debugging
+                            logger.error(f"Error emitting {event_type} event: {e}")
+                            traceback.print_exc()  # Print traceback for debugging
                     
                     def wrapper(*args, **kwargs):
                         # Get the friendly tool name
@@ -138,10 +149,11 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                         
                         # Highly visible output for tool selection
                         if tool_name:
-                            print(f"\n{'='*50}")
-                            print(f"🔧 TOOL SELECTED BY LLM: '{tool_name}'")
-                            print(f"📝 PLUGIN: {plugin_name} → FUNCTION: {current_method_name}")
-                            print(f"{'='*50}\n")
+                            logger.info(f"\n{'='*50}")
+                            logger.info(f"🚀 EXECUTING TOOL: '{tool_name}'")
+                            logger.info(f"📝 PLUGIN: {plugin_name} → FUNCTION: {current_method_name}")
+                            logger.info(f"⏰ TIME: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+                            logger.info(f"{'='*50}\n")
                         
                         # Capture parameters for logging
                         parameters_dict = {}
@@ -171,10 +183,10 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                         
                         # Print parameters
                         if parameters_dict and tool_name:
-                            print(f"📝 Parameters:")
+                            logger.info(f"📝 Parameters:")
                             for param_name, param_value in parameters_dict.items():
-                                print(f"   - {param_name}: {param_value}")
-                            print()
+                                logger.info(f"   - {param_name}: {param_value}")
+                            logger.info("")
                         
                         # Convert parameters to JSON string for logging
                         parameters_json = json.dumps(parameters_dict, default=str)
@@ -191,7 +203,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                         
                         # Log and send notification that tool is starting
                         if tool_name:
-                            print(f"Tool started: {tool_name} with parameters: {parameters_json}")
+                            logger.info(f"Tool started: {tool_name} with parameters: {parameters_json}")
                             # Use our synchronous function instead of create_task
                             sync_emit_tool_event('tool_usage', tool_name, 'started')
                             sync_emit_tool_event('tool_execution', tool_name, 'started', 
@@ -209,11 +221,11 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                     active_tools[tool_id]['status'] = 'completed'
                                     duration = time.time() - active_tools[tool_id]['start_time']
                                     
-                                print(f"Tool completed successfully: {tool_name}")
+                                logger.info(f"Tool completed successfully: {tool_name}")
                                 # Print result summary
                                 if isinstance(result, str):
                                     result_preview = result[:150] + "..." if len(result) > 150 else result
-                                    print(f"📋 Result preview: {result_preview}\n")
+                                    logger.info(f"📋 Result preview: {result_preview}\n")
                                     
                                 # Use our synchronous function instead of asyncio.create_task
                                 sync_emit_tool_event('tool_usage', tool_name, 'completed')
@@ -231,7 +243,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                                     active_tools[tool_id]['error'] = str(e)
                                     duration = time.time() - active_tools[tool_id]['start_time']
                                 
-                                print(f"❌ Tool failed: {tool_name} with error: {str(e)}")
+                                logger.info(f"❌ Tool failed: {tool_name} with error: {str(e)}")
                                 # Use our synchronous function instead of asyncio.create_task
                                 sync_emit_tool_event('tool_execution', tool_name, 'failed', 
                                                    tool_id=tool_id, error=str(e), duration=duration)
@@ -244,7 +256,7 @@ def create_tracking_wrapper(plugin, plugin_name, sid):
                 # Replace the original method with our wrapper, using the factory to preserve context
                 setattr(plugin, attr_name, create_wrapper(attr_name, original_method))
         except Exception as e:
-            print(f"Error wrapping method {attr_name}: {str(e)}")
+            logger.error(f"Error wrapping method {attr_name}: {str(e)}")
             traceback.print_exc()  # Print traceback for debugging
     
     return plugin
